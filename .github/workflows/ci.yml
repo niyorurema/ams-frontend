@@ -1,0 +1,42 @@
+name: Frontend CI
+
+on:
+  push:
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.mjs'
+      - '**.mts'
+      - '**.json'
+      - '**.css'
+      - 'package-lock.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.mjs'
+      - '**.mts'
+      - '**.json'
+      - '**.css'
+      - 'package-lock.json'
+      - '.github/workflows/ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.example.invalid
