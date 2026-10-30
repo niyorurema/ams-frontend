@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { Loader2, Mail, Network, Save, Server, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { confirmerAvecSweetAlert } from '@/lib/confirmation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,8 @@ import {
 } from '@/lib/api';
 import {
   useSystemIntegrationSettings,
+  usePreviewGpioSync,
+  useSyncGpio,
   useTestGpioConnection,
   useTestSmtpConnection,
   useUpdateSystemIntegrationSettings,
@@ -51,6 +54,8 @@ export default function IntegrationsSettingsPage() {
   const saveSettings = useUpdateSystemIntegrationSettings();
   const testSmtp = useTestSmtpConnection();
   const testGpio = useTestGpioConnection();
+  const previewGpioSync = usePreviewGpioSync();
+  const syncGpio = useSyncGpio();
   const [smtpDraft, setSmtpDraft] = useState<SmtpSettingsInput | null>(null);
   const [gpioDraft, setGpioDraft] = useState<GpioSettingsInput | null>(null);
   const smtp: SmtpSettingsInput = smtpDraft ?? (settingsQuery.data ? {
@@ -106,6 +111,30 @@ export default function IntegrationsSettingsPage() {
         await testGpio.mutateAsync();
       }
       toast.success(t(kind === 'smtp' ? 'smtpTestSuccess' : 'gpioTestSuccess'));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const previsualiserSynchronisationGpio = async () => {
+    try {
+      await previewGpioSync.mutateAsync();
+      toast.success(t('gpioSyncPreviewSuccess'));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const appliquerSynchronisationGpio = async () => {
+    if (!await confirmerAvecSweetAlert(t('gpioSyncConfirm'), {
+      title: t('confirmSyncTitle'),
+      confirmButtonText: t('confirmSyncButton'),
+      cancelButtonText: t('cancelSyncButton'),
+      destructive: true,
+    })) return;
+    try {
+      await syncGpio.mutateAsync();
+      toast.success(t('gpioSyncSuccess'));
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -207,6 +236,36 @@ export default function IntegrationsSettingsPage() {
               <Button type="button" variant="outline" disabled={testGpio.isPending || saveSettings.isPending} onClick={() => void testConnection('gpio')}>{testGpio.isPending || saveSettings.isPending ? <Loader2 className="size-4 animate-spin" /> : <Server className="size-4" />}{t('testConnection')}</Button>
             </div>
           </form>
+          <div className="mt-5 space-y-3 border-t pt-4">
+            <div>
+              <h3 className="text-sm font-semibold">{t('gpioSyncTitle')}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{t('gpioSyncDescription')}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" disabled={previewGpioSync.isPending || syncGpio.isPending} onClick={() => void previsualiserSynchronisationGpio()}>
+                {previewGpioSync.isPending && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+                {t('gpioSyncPreview')}
+              </Button>
+              <Button type="button" disabled={!gpio.sync_enabled || previewGpioSync.isPending || syncGpio.isPending} onClick={() => void appliquerSynchronisationGpio()}>
+                {syncGpio.isPending && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+                {t('gpioSyncApply')}
+              </Button>
+            </div>
+            {(previewGpioSync.data ?? syncGpio.data) && (
+              <div className="space-y-3 rounded-md border p-3" aria-live="polite">
+                <p className="text-sm font-medium">{syncGpio.data ? t('gpioSyncAppliedResult') : t('gpioSyncPreviewResult')}</p>
+                {Object.entries((previewGpioSync.data ?? syncGpio.data)?.results ?? {}).map(([name, stats]) => (
+                  <div key={name} className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-5">
+                    <p><span className="text-muted-foreground">{name}</span></p>
+                    <p><span className="text-muted-foreground">{t('gpioSyncRead')}:</span> <strong>{stats.lues}</strong></p>
+                    <p><span className="text-muted-foreground">{t('gpioSyncCreated')}:</span> <strong>{stats.crees}</strong></p>
+                    <p><span className="text-muted-foreground">{t('gpioSyncUpdated')}:</span> <strong>{stats.maj}</strong></p>
+                    <p><span className="text-muted-foreground">{t('gpioSyncErrors')}:</span> <strong>{stats.erreurs}</strong></p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
       <SystemJobsPanel />

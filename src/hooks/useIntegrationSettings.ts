@@ -46,6 +46,21 @@ export interface GpioSettingsInput {
   port: number;
 }
 
+export interface GpioSyncStats {
+  lues: number;
+  crees: number;
+  maj: number;
+  ignores: number;
+  erreurs: number;
+  comptes_a_creer?: number;
+  details?: string[];
+}
+
+export interface GpioSyncResult {
+  dry_run: boolean;
+  results: Record<string, GpioSyncStats>;
+}
+
 export interface LdapSettings {
   auth_mode: 'LOCAL' | 'LDAP' | 'HYBRIDE';
   ldap_host: string;
@@ -102,6 +117,24 @@ export function useTestGpioConnection() {
   return useMutation({
     mutationFn: async () => {
       const response = await api.post<ApiResponse<{ success: boolean }>>('/api/admin/integrations/gpio/test', {});
+      return response.data.data;
+    },
+  });
+}
+
+export function usePreviewGpioSync() {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await api.post<ApiResponse<GpioSyncResult>>('/api/admin/integrations/gpio/sync-preview', {}, { timeout: 120_000 });
+      return response.data.data;
+    },
+  });
+}
+
+export function useSyncGpio() {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await api.post<ApiResponse<GpioSyncResult>>('/api/admin/integrations/gpio/sync', { confirm: true }, { timeout: 120_000 });
       return response.data.data;
     },
   });
