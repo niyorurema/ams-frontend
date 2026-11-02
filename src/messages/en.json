@@ -479,7 +479,9 @@
     "synchronisationReussie": "Synchronization completed",
     "miseAJourReussie": "Sensor updated",
     "creationReussie": "Sensor created successfully",
-    "descriptionAjout": "Register the network information for the new sensor."
+    "descriptionAjout": "Register the network information for the new sensor.",
+    "communicationKey": "Communication key",
+    "communicationKeyHelp": "ZKTeco protocol communication key. Usually 0 when the sensor has no custom key."
   },
   "employes": {
     "title": "Employees",

@@ -28,6 +28,9 @@ export interface CapteurUpdate {
   port: number;
   type_reseau: Capteur['type_reseau'];
   statut: Capteur['statut'];
+  numero_serie?: string;
+  com_key?: string;
+  timeout_secondes?: number;
 }
 
 export interface CapteurCreate extends CapteurUpdate {

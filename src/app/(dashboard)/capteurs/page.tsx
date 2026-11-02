@@ -165,6 +165,9 @@ export default function CapteursPage() {
       port: capteur.port,
       type_reseau: capteur.type_reseau,
       statut: capteur.statut,
+      numero_serie: capteur.numero_serie ?? '',
+      com_key: capteur.com_key ?? '0',
+      timeout_secondes: capteur.timeout_secondes ?? 60,
     });
   };
 
@@ -230,7 +233,11 @@ export default function CapteursPage() {
     try {
       await updateMutation.mutateAsync({
         capteurId: editingCapteur.id,
-        data: editForm,
+        data: {
+          ...editForm,
+          numero_serie: editForm.numero_serie?.trim() || '',
+          com_key: editForm.com_key?.trim() || '0',
+        },
       });
       toast.success(t('miseAJourReussie'));
       setEditingCapteur(null);
@@ -551,13 +558,17 @@ export default function CapteursPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-capteur-comkey">Communication key</Label>
+                <Label htmlFor="new-capteur-comkey">{t('communicationKey')}</Label>
                 <Input
                   id="new-capteur-comkey"
                   value={createForm.com_key ?? ''}
                   onChange={(event) => setCreateForm({ ...createForm, com_key: event.target.value })}
                   placeholder="0"
+                  aria-describedby="new-capteur-comkey-help"
                 />
+                <p id="new-capteur-comkey-help" className="text-xs text-muted-foreground">
+                  {t('communicationKeyHelp')}
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -658,6 +669,29 @@ export default function CapteursPage() {
                       <SelectItem value="HORS_LIGNE">{t('horsLigne')}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-capteur-serial">{t('numeroSerie')}</Label>
+                  <Input
+                    id="edit-capteur-serial"
+                    value={editForm.numero_serie ?? ''}
+                    onChange={(event) => setEditForm({ ...editForm, numero_serie: event.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-capteur-comkey">{t('communicationKey')}</Label>
+                  <Input
+                    id="edit-capteur-comkey"
+                    value={editForm.com_key ?? '0'}
+                    onChange={(event) => setEditForm({ ...editForm, com_key: event.target.value })}
+                    placeholder="0"
+                    aria-describedby="edit-capteur-comkey-help"
+                  />
+                  <p id="edit-capteur-comkey-help" className="text-xs text-muted-foreground">
+                    {t('communicationKeyHelp')}
+                  </p>
                 </div>
               </div>
               <DialogFooter>

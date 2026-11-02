@@ -7,6 +7,8 @@ export interface Capteur {
   type_reseau: 'LAN' | 'NETBIRD';
   statut: 'ACTIF' | 'INACTIF' | 'HORS_LIGNE';
   numero_serie?: string;
+  com_key?: string;
+  timeout_secondes?: number;
   firmware?: string;
   platform?: string;
   dernier_scan?: string;

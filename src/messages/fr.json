@@ -479,7 +479,9 @@
     "synchronisationReussie": "Synchronisation terminée",
     "miseAJourReussie": "Capteur mis à jour",
     "creationReussie": "Capteur créé avec succès",
-    "descriptionAjout": "Enregistrez les informations réseau du nouveau capteur."
+    "descriptionAjout": "Enregistrez les informations réseau du nouveau capteur.",
+    "communicationKey": "Communication key",
+    "communicationKeyHelp": "Clé de communication du protocole ZKTeco. Généralement 0 si le capteur n’en possède pas de clé personnalisée."
   },
   "employes": {
     "title": "Employés",
