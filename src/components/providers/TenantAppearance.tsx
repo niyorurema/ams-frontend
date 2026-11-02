@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { useTenantConfig } from '@/hooks/useTenantConfig';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useTenantStore } from '@/stores/tenantStore';
@@ -57,6 +58,7 @@ export function TenantAppearance() {
   const fontSizePreference = usePreferencesStore((state) => state.fontSize);
   const primaryColorPreference = usePreferencesStore((state) => state.primaryColor);
   const customPrimaryColor = usePreferencesStore((state) => state.customPrimaryColor);
+  const { resolvedTheme } = useTheme();
   const configuration = data ?? tenant;
 
   useEffect(() => {
@@ -81,16 +83,28 @@ export function TenantAppearance() {
     const topbar = /^#[\da-f]{6}$/i.test(configuredTopbar) ? configuredTopbar : '#ffffff';
 
     const applyTenantColors = () => {
+      const isDark = root.classList.contains('dark') || resolvedTheme === 'dark';
       root.style.setProperty('--primary', primary);
       root.style.setProperty('--primary-foreground', foregroundFor(primary));
       root.style.setProperty('--sidebar-primary', primary);
       root.style.setProperty('--sidebar-primary-foreground', foregroundFor(primary));
       root.style.setProperty('--ring', primary);
       root.style.setProperty('--sidebar-ring', primary);
-      root.style.setProperty('--sidebar', sidebar);
-      root.style.setProperty('--sidebar-foreground', foregroundFor(sidebar));
-      root.style.setProperty('--header-background', topbar);
-      root.style.setProperty('--header-foreground', foregroundFor(topbar));
+      if (isDark) {
+        root.style.setProperty('--sidebar', '#171717');
+        root.style.setProperty('--sidebar-foreground', '#ffffff');
+        root.style.setProperty('--sidebar-accent', '#262626');
+        root.style.setProperty('--sidebar-accent-foreground', '#ffffff');
+        root.style.setProperty('--header-background', '#171717');
+        root.style.setProperty('--header-foreground', '#ffffff');
+      } else {
+        root.style.setProperty('--sidebar', sidebar);
+        root.style.setProperty('--sidebar-foreground', foregroundFor(sidebar));
+        root.style.setProperty('--sidebar-accent', '#e5e7eb');
+        root.style.setProperty('--sidebar-accent-foreground', foregroundFor(sidebar));
+        root.style.setProperty('--header-background', topbar);
+        root.style.setProperty('--header-foreground', foregroundFor(topbar));
+      }
       if (configuration && !root.classList.contains('dark')) {
         root.style.setProperty('--secondary', secondary);
         root.style.setProperty('--secondary-foreground', foregroundFor(secondary));
@@ -124,6 +138,8 @@ export function TenantAppearance() {
       root.style.removeProperty('--sidebar-ring');
       root.style.removeProperty('--sidebar');
       root.style.removeProperty('--sidebar-foreground');
+      root.style.removeProperty('--sidebar-accent');
+      root.style.removeProperty('--sidebar-accent-foreground');
       root.style.removeProperty('--header-background');
       root.style.removeProperty('--header-foreground');
       root.style.removeProperty('--secondary');
@@ -131,7 +147,7 @@ export function TenantAppearance() {
       root.style.removeProperty('--font-sans');
       root.style.removeProperty('font-size');
     };
-  }, [configuration, customPrimaryColor, fontFamilyPreference, fontSizePreference, primaryColorPreference]);
+  }, [configuration, customPrimaryColor, fontFamilyPreference, fontSizePreference, primaryColorPreference, resolvedTheme]);
 
   return null;
 }

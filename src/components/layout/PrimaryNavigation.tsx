@@ -105,7 +105,7 @@ export function PrimaryNavigation({
           isActive
             ? 'bg-primary text-primary-foreground'
             : horizontal
-              ? 'bg-white/95 text-[#111827] hover:bg-white hover:text-black hover:ring-1 hover:ring-black/20'
+              ? 'bg-transparent text-[var(--header-foreground)] hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-foreground)] hover:ring-1 hover:ring-current/20'
               : 'text-sidebar-foreground hover:bg-transparent hover:text-sidebar-foreground hover:ring-1 hover:ring-current/30',
           horizontal && 'min-h-10 shrink-0 whitespace-nowrap',
           collapsed && 'md:justify-center md:px-2',
