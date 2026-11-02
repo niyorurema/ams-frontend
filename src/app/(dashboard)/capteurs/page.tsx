@@ -68,7 +68,6 @@ interface ContextMenuState {
 const localeTags: Record<string, string> = {
   fr: 'fr-FR',
   en: 'en-GB',
-  rn: 'rn-BI',
 };
 
 /** Liste responsive des capteurs avec sélection et actions contextuelles. */

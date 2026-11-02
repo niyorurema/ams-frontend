@@ -70,7 +70,7 @@ export default function DashboardLayout({
         </main>
       </div>
       {navigationPosition === 'bottom' && (
-        <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-lg backdrop-blur md:block">
+        <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)] shadow-lg md:block" style={{ color: '#111827' }}>
           <div className="flex w-full justify-center px-2 py-2 sm:px-4">
             <PrimaryNavigation
               orientation="horizontal"

@@ -108,7 +108,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
 
       <div className="min-w-0 max-w-[52vw] justify-self-center">
         {navigationPosition === 'top' && (
-          <div className="hidden md:block">
+          <div className="hidden rounded-md bg-white px-1 py-1 text-[#111827] md:block">
             <PrimaryNavigation orientation="horizontal" />
           </div>
         )}
