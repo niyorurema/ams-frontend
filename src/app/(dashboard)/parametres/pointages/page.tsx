@@ -160,8 +160,7 @@ export default function PointagesSettingsPage() {
   return (
     <div className="w-full space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
       </header>
 
       {readOnly && <p className="rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">{t('readOnlyNotice')}</p>}

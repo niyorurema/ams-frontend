@@ -52,8 +52,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
           {t('welcome', { name: user?.nom_complet || '' })}
         </p>
       </div>

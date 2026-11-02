@@ -236,8 +236,7 @@ export default function UtilisateursPage() {
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
         </div>
         <Button type="button" onClick={openCreate}>
           <Plus aria-hidden="true" className="size-4" />

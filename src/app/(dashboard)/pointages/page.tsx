@@ -260,8 +260,7 @@ export default function PointagesPage() {
             <CalendarDays aria-hidden="true" className="size-4" />
             <span>{format(parseISO(`${period.debut}T00:00:00`), 'dd MMM', { locale: localeDate })} – {format(parseISO(`${period.fin}T00:00:00`), 'dd MMM yyyy', { locale: localeDate })}</span>
           </div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
             {t('totalPointages', { count: numberFormat.format(total) })}
           </p>
         </div>

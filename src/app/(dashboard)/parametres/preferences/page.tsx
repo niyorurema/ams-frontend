@@ -254,8 +254,7 @@ export default function PreferencesPage() {
     <div className="w-full space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('autoSave')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('autoSave')}</p>
         </div>
         <Button type="button" variant="outline" onClick={handleReset} disabled={isPending}>
           <RotateCcw aria-hidden="true" className="size-4" />

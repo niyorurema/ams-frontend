@@ -94,8 +94,7 @@ function ProfileForm({ profile }: { profile: CurrentProfile }) {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{profile.email ?? ''}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{profile.email ?? ''}</p>
       </div>
 
       <Card>

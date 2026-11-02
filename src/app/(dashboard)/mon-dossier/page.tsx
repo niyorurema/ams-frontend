@@ -68,7 +68,6 @@ function formatTime(value: string): string {
 
 export default function MonDossierPage() {
   const t = useTranslations('monDossier');
-  const tDashboard = useTranslations('dashboard');
   const locale = useLocale();
   const user = useAuthStore((state) => state.user);
   const isLecteur = user?.role === 'lecteur';
@@ -167,8 +166,7 @@ export default function MonDossierPage() {
     <div className="w-full space-y-6">
       <header className="flex flex-col justify-between gap-4 border-b pb-5 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{isLecteur ? tDashboard('title') : t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-sm text-muted-foreground">
             {isLecteur ? t('dashboardDescription') : t('description')}
           </p>
         </div>

@@ -259,8 +259,7 @@ export default function TenantSettingsPage() {
     <div className="w-full space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="mt-1 text-muted-foreground">{configuration?.name}</p>
+                    <p className="mt-1 text-muted-foreground">{configuration?.name}</p>
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={reinitialiser} disabled={updateMutation.isPending || uploadMutation.isPending}>

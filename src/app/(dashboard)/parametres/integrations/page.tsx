@@ -174,8 +174,7 @@ export default function IntegrationsSettingsPage() {
   return (
     <div className="w-full space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="mt-1 text-muted-foreground">{t('description')}</p>
+                <p className="mt-1 text-muted-foreground">{t('description')}</p>
       </header>
 
       {settingsQuery.data.smtp.legacy_configuration || settingsQuery.data.gpio.legacy_configuration ? (

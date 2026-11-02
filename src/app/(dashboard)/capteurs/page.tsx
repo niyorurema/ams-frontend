@@ -287,8 +287,7 @@ export default function CapteursPage() {
     <div className="space-y-5" onClick={() => setContextMenu(null)}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
             {data?.total ?? capteurs.length} · {t('title')}
           </p>
         </div>

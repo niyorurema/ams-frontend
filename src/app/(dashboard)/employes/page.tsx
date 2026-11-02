@@ -502,8 +502,7 @@ export default function EmployesPage() {
     <div className="min-w-0 space-y-5">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('totalEmployes', { count: total })}</p>
+                    <p className="text-sm text-muted-foreground">{t('totalEmployes', { count: total })}</p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">
           <Button type="button" className="w-full sm:w-auto" onClick={() => setCreateOpen(true)}>

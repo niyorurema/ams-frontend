@@ -309,8 +309,7 @@ export default function RapportsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-      </header>
+              </header>
 
       <Tabs value={activeTab} onValueChange={(value) => value && setActiveTab(value)}>
         <TabsList className="w-full sm:w-fit">

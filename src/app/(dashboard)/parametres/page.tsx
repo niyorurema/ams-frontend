@@ -14,8 +14,7 @@ export default function ParametresPage() {
 
   return (
     <div className="w-full space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-      <Link href="/parametres/preferences" className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Link href="/parametres/preferences" className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Card className="transition-colors hover:bg-accent/40">
           <CardHeader className="flex grid-cols-[auto_1fr_auto] items-center gap-4">
             <SlidersHorizontal aria-hidden="true" className="size-6 text-primary" />

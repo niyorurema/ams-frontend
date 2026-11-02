@@ -184,8 +184,7 @@ export default function JoursFeriesPage() {
     <div className="w-full space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => void importerBurundi()} disabled={importer.isPending}>
