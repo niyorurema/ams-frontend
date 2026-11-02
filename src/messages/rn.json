@@ -105,7 +105,7 @@
     "inactive": "Ntikora",
     "lastLogin": "Igihe aheruka kwinjira",
     "accountId": "Nomero ya konti",
-    "tenantId": "Nomero ya tenant",
+    "tenantId": "Nomero ya sosiyete",
     "superAdmin": "Umukuru wa sisitemu",
     "employeeTitle": "Dosiye y'umukozi",
     "employeeDescription": "Amakuru y'akazi n'ayo afitaniye na konti yawe.",
@@ -593,11 +593,11 @@
     "title": "Raporo",
     "journalier": {
       "title": "Raporo ya buri musi (J-1)",
-      "description": "Irungikwa ku bacungerezi, abakuru ba serivisi, abayobozi n'abakomiseri bafise amasezerano akora, ikazana amakuru y'igice cabo n'ibice biri musi yaco. Igenamiterere ryo kwemerera kurungika rirafungura canke rigahagarika imeyili zose za raporo kuri tenant, harimwo n'izirungikwa n'uwukoresha.",
+      "description": "Irungikwa ku bacungerezi, abakuru ba serivisi, abayobozi n'abakomiseri bafise amasezerano akora, ikazana amakuru y'igice cabo n'ibice biri musi yaco. Igenamiterere ryo kwemerera kurungika rirafungura canke rigahagarika imeyili zose za raporo kuri sosiyete, harimwo n'izirungikwa n'uwukoresha.",
       "time": "Isaha yo kurungika",
       "format": "Uburyo bwa dosiye",
       "language": "Ururimi",
-      "workingDays": "Imisi y'akazi ya tenant: {days}. Nta raporo irungikwa iyo ejo wari umusi mukuru.",
+      "workingDays": "Imisi y'akazi ya sosiyete: {days}. Nta raporo irungikwa iyo ejo wari umusi mukuru.",
       "automaticRecipients": "Abakira raporo ku buryo bwikora",
       "automaticRecipientsHelp": "Abafise amasezerano akora baronka amakuru y'abakozi bo mu gice cabo no mu bice biri musi yaco.",
       "currentRecipient": "Aronka raporo ku buryo bwikora",
@@ -658,7 +658,7 @@
       },
       "previewOnly": "Kuraba gusa: gufungura raporo ntibiyirungika kandi ntibihindura amateka yayo.",
       "configurationMissing": "Banza ubike ivyerekeye raporo mu gice ca Raporo ya buri musi (J-1) kugira ngo itegekanirwe.",
-      "empty": "Nta raporo yo ku musi uheze irindiriye kurabwa muri iyi tenant.",
+      "empty": "Nta raporo yo ku musi uheze irindiriye kurabwa muri iyi sosiyete.",
       "searchPlaceholder": "Rondera ukoresheje izina, imeyili, ico akora canke igice",
       "searchByDate": "Rondera ukoresheje itariki ya raporo",
       "noSearchResults": "Nta raporo ijanye n'ivyo warondeye.",
@@ -937,7 +937,7 @@
   "admin": {
     "tenants": {
       "title": "Kurongora amasosiyete",
-      "description": "Rongora tenant, abarongozi babo n'uburenganzira.",
+      "description": "Rongora sosiyete, abarongozi babo n'uburenganzira.",
       "accessDenied": "Abakuru ba sisitemu gusa ni bo bashobora gufungura uru rupapuro.",
       "creer": "Ongerako ishirahamwe",
       "rechercher": "Rondera izina, ikimenyetso canke imeyili...",
@@ -960,7 +960,7 @@
       "desactiver": "Hagarika",
       "reactiver": "Subizaho",
       "aucunResultat": "Nta mashirahamwe yabonetse",
-      "details": "Ibisobanuro vya tenant n'amakonti yayo.",
+      "details": "Ibisobanuro vya sosiyete n'amakonti yayo.",
       "oui": "Ego",
       "non": "Oya",
       "confirmDeactivate": "Hagarika ishirahamwe {name}?",
@@ -970,7 +970,7 @@
       "reactivated": "Ishirahamwe ryarasubijweho.",
       "dialogueCreation": {
         "title": "Ongerako ishirahamwe rishasha",
-        "description": "Konti y'umukuru izokorwa hamwe na tenant.",
+        "description": "Konti y'umukuru izokorwa hamwe na sosiyete.",
         "admin": "Umukuru w'ishirahamwe",
         "adminNom": "Amazina yose",
         "adminEmail": "Imeyili",
@@ -980,7 +980,7 @@
       },
       "dialogueModification": {
         "title": "Hindura ishirahamwe",
-        "description": "Hindura amakuru yo kuvugana n'imimerere ya tenant."
+        "description": "Hindura amakuru yo kuvugana n'imimerere ya sosiyete."
       },
       "identifiantsAdmin": {
         "title": "Konti y'umukuru yarakozwe",
@@ -996,7 +996,7 @@
       "adminOnly": "Igenamiterere rya LDAP ryemerewe abakuru n'abajejwe abakozi.",
       "configuration": {
         "title": "Igenamiterere ry'ububiko",
-        "description": "Iri genamiterere rireba tenant iriho gusa. Ijambo banga rya konti ya serivisi rirabikwa mu buryo burinzwe kandi ntirigaragazwa.",
+        "description": "Iri genamiterere rireba sosiyete iriho gusa. Ijambo banga rya konti ya serivisi rirabikwa mu buryo burinzwe kandi ntirigaragazwa.",
         "authMode": "Uburyo bwo kwemeza konti",
         "local": "Konti za AMS gusa",
         "hybrid": "LDAP hamwe n'uburyo bwa AMS",
@@ -1015,7 +1015,7 @@
         "useTls": "Koresha STARTTLS",
         "secretUnchanged": "Reka ubusa kugira ngo ijambo banga risigare",
         "secretConfigured": "Ijambo banga rirabitswe. Ntirigaragazwa kandi ntirisubizwa.",
-        "legacyNotice": "Hari amakuru ya LDAP akomoka ku igenamiterere rya kera rya server. Bika kugira ngo abikwe kuri tenant.",
+        "legacyNotice": "Hari amakuru ya LDAP akomoka ku igenamiterere rya kera rya server. Bika kugira ngo abikwe kuri sosiyete.",
         "loading": "Kurondera igenamiterere rya LDAP…",
         "loadError": "Ntivyashobotse kuronka igenamiterere rya LDAP.",
         "save": "Bika igenamiterere rya LDAP",
@@ -1046,7 +1046,7 @@
       "secretUnchanged": "Reka ubusa kugira ngo ijambo banga risigare",
       "secretConfigured": "Ijambo banga rirabitswe. Ntirigaragazwa kandi ntirisubizwa.",
       "gpioTitle": "Ububiko bwa GPIO / ETau",
-      "gpioDescription": "Ihuriro ryo gusoma gusa ububiko bwa ETau no guhuza tenant OBR (ID 1).",
+      "gpioDescription": "Ihuriro ryo gusoma gusa ububiko bwa ETau no guhuza sosiyete OBR (ID 1).",
       "gpioEnabled": "Emeza isanisha rya OBR",
       "gpioHost": "Izina rya server ya GPIO",
       "gpioDatabase": "Izina ry'ububiko",
@@ -1116,7 +1116,7 @@
       "readOnlyNotice": "Soma gusa. Abakuru n'abajejwe abakozi ni bo bonyene bashobora guhindura iri genamiterere.",
       "loadError": "Ntivyashobotse kuronka igenamiterere ry'amasaha y'akazi.",
       "workingDaysTitle": "Imisi y'akazi",
-      "workingDaysDescription": "Hitamwo imisi y'akazi kuri iyi tenant.",
+      "workingDaysDescription": "Hitamwo imisi y'akazi kuri iyi sosiyete.",
       "days": {
         "monday": "Kuwa mbere",
         "tuesday": "Kuwa kabiri",
@@ -1127,7 +1127,7 @@
         "sunday": "Ku cyumweru"
       },
       "saveWorkingDays": "Bika imisi y'akazi",
-      "defaultScheduleTitle": "Amasaha asanzwe ya tenant",
+      "defaultScheduleTitle": "Amasaha asanzwe ya sosiyete",
       "defaultScheduleDescription": "Akoreshwa ku bakozi badafise amasaha yabo canke umurwi w'akazi.",
       "template": "Amasaha yo gutangirirako",
       "templates": {
@@ -1257,7 +1257,7 @@
         "unconfiguredBreakEventsWarning": "Hari amasaha y'akuruhuko aherutse kwinjizwa, ariko ibice vyose vy'akuruhuko ntivyatunganijwe.",
         "previewRequired": "Banza ugereranye amategeko ku mukozi no ku musi imbere yo gusubira kubara bose.",
         "confirmTenantRecalculation": "Urashaka gusubira kubara uwo musi ku bakozi bose bakora muri iki kigo?",
-        "recalculationScopeHelp": "Reka nomero y'umukozi irere kugira usubire ubare abakozi bose bakora muri iyi tenant (ntibirenga 1,000 kuri buri busabe). Iki gikorwa cemerwa abakuru n'abajejwe abakozi gusa. Igenamiterere rikoreshwa ku bibarwa bishasha no ku minsi usubiyemwo kubara aha.",
+        "recalculationScopeHelp": "Reka nomero y'umukozi irere kugira usubire ubare abakozi bose bakora muri iyi sosiyete (ntibirenga 1,000 kuri buri busabe). Iki gikorwa cemerwa abakuru n'abajejwe abakozi gusa. Igenamiterere rikoreshwa ku bibarwa bishasha no ku minsi usubiyemwo kubara aha.",
         "recalculationButton": "Subira ubare uwo musi",
         "recalculationPending": "Biriko birasubira kubarwa…",
         "recalculationComplete": "Gusubira kubara ukwitaba akazi biheze.",
@@ -1399,7 +1399,7 @@
       "desactiver": "Hagarika",
       "reactiver": "Subizaho",
       "aucunResultat": "Nta bakoresha babonetse",
-      "formHelp": "Iyi konti izokorwa muri tenant yawe.",
+      "formHelp": "Iyi konti izokorwa muri sosiyete yawe.",
       "motDePasseInitial": "Ijambo banga rya mbere",
       "passkeyEnrollmentApproval": "Emeza iyandikwa rya passkey",
       "passkeyEnrollmentApprovalHelp": "Iremezwa rimwe gusa. Banza wemeze umukozi umubonye imbere yawe; irakoreshwa rimwe mu kwandika passkey.",

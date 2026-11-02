@@ -128,7 +128,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         <h1 className="truncate text-sm font-semibold sm:text-base">{tenant?.name || 'AMS'}</h1>
       </div>
 
-      <div className={`pointer-events-none hidden min-w-0 justify-self-center self-center text-center md:block md:max-w-[min(32vw,420px)] ${navigationPosition === 'top' ? 'md:-translate-x-24' : ''}`}>
+      <div className={`pointer-events-none hidden min-w-0 justify-self-center self-center text-center md:block md:max-w-[min(32vw,420px)] ${navigationPosition === 'top' ? 'md:-translate-x-36' : ''}`}>
         <h1 className="truncate text-base font-semibold" title={pageTitle}>{pageTitle}</h1>
       </div>
 

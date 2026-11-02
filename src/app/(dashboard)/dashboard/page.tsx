@@ -17,7 +17,6 @@ import { InactiveCapteurs } from '@/components/dashboard/inactive-capteurs';
 import { ShiftsWidget } from '@/components/dashboard/shifts-widget';
 import { TopUnites } from '@/components/dashboard/top-unites';
 import { useDashboardKpis } from '@/hooks/useDashboardKpis';
-import { useAuthStore } from '@/stores/authStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 
 /** Tableau de bord alimenté par une seule requête KPI tenant-scoped. */
@@ -27,7 +26,6 @@ export default function DashboardPage() {
   const tPreferences = useTranslations('preferences');
   const locale = useLocale();
   const dateLocale = locale === 'fr' ? fr : enGB;
-  const user = useAuthStore((state) => state.user);
   const widgets = usePreferencesStore((state) => state.widgets);
   const dashboardKpis = useDashboardKpis();
   const kpis = dashboardKpis.data;
@@ -51,12 +49,6 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-          {t('welcome', { name: user?.nom_complet || '' })}
-        </p>
-      </div>
-
       {visibleWidgets.length > 0 ? (
         <section
           aria-label={t('title')}
