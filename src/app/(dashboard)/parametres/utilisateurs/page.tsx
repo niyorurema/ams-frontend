@@ -448,7 +448,7 @@ export default function UtilisateursPage() {
                 <Combobox
                   id="user-role"
                   options={roles
-                    .filter((role) => currentUser?.role === 'admin' || role !== 'admin')
+                    .filter((role) => role !== 'admin' || Boolean(currentUser?.is_super_admin))
                     .map((role) => ({ value: role, label: t(`roles.${role}`) }))}
                   value={form.role}
                   onValueChange={(value) => {
