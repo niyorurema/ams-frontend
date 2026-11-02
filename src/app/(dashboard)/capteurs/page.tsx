@@ -7,6 +7,7 @@ import {
   Ellipsis,
   Fingerprint,
   Pencil,
+  Plus,
   RefreshCw,
   Wifi,
   WifiOff,
@@ -53,8 +54,10 @@ import { getErrorMessage } from '@/lib/api';
 import type { Capteur } from '@/types/capteur';
 import {
   useCapteurs,
+  useCreateCapteur,
   useSyncCapteur,
   useUpdateCapteur,
+  type CapteurCreate,
   type CapteurSyncType,
   type CapteurUpdate,
 } from '@/hooks/useCapteurs';
@@ -79,6 +82,7 @@ export default function CapteursPage() {
   const [offset, setOffset] = useState(0);
   const { data, error, isFetching, isLoading, refetch } = useCapteurs({ limit, offset });
   const syncMutation = useSyncCapteur();
+  const createMutation = useCreateCapteur();
   const updateMutation = useUpdateCapteur();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [syncingIds, setSyncingIds] = useState<number[]>([]);
@@ -86,6 +90,17 @@ export default function CapteursPage() {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [editingCapteur, setEditingCapteur] = useState<Capteur | null>(null);
   const [editForm, setEditForm] = useState<CapteurUpdate | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState<CapteurCreate>({
+    nom: '',
+    adresse_ip: '',
+    port: 4370,
+    type_reseau: 'LAN',
+    statut: 'ACTIF',
+    numero_serie: '',
+    com_key: '',
+    timeout_secondes: 60,
+  });
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const capteurs = data?.items ?? [];
 
@@ -183,6 +198,31 @@ export default function CapteursPage() {
     }
   };
 
+  const createCapteur = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      await createMutation.mutateAsync({
+        ...createForm,
+        numero_serie: createForm.numero_serie?.trim() || undefined,
+        com_key: createForm.com_key?.trim() || undefined,
+      });
+      toast.success(t('creationReussie'));
+      setShowCreateDialog(false);
+      setCreateForm({
+        nom: '',
+        adresse_ip: '',
+        port: 4370,
+        type_reseau: 'LAN',
+        statut: 'ACTIF',
+        numero_serie: '',
+        com_key: '',
+        timeout_secondes: 60,
+      });
+    } catch (createError) {
+      toast.error(getErrorMessage(createError));
+    }
+  };
+
   const saveCapteur = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingCapteur || !editForm) return;
@@ -245,17 +285,23 @@ export default function CapteursPage() {
             {data?.total ?? capteurs.length} · {t('title')}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          aria-label={tCommon('refresh')}
-          title={tCommon('refresh')}
-          onClick={() => void refetch()}
-          disabled={isFetching}
-        >
-          <RefreshCw aria-hidden="true" className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" onClick={() => setShowCreateDialog(true)}>
+            <Plus aria-hidden="true" className="size-4" />
+            {t('ajouter')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={tCommon('refresh')}
+            title={tCommon('refresh')}
+            onClick={() => void refetch()}
+            disabled={isFetching}
+          >
+            <RefreshCw aria-hidden="true" className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+          </Button>
+        </div>
       </div>
 
       {selectedIds.length > 0 && (
@@ -421,6 +467,109 @@ export default function CapteursPage() {
           />
         </div>
       )}
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('ajouter')}</DialogTitle>
+            <DialogDescription>{t('descriptionAjout')}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={createCapteur} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-capteur-nom">{t('nom')}</Label>
+              <Input
+                id="new-capteur-nom"
+                value={createForm.nom}
+                onChange={(event) => setCreateForm({ ...createForm, nom: event.target.value })}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-[1fr_6rem] gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-ip">{t('adresseIp')}</Label>
+                <Input
+                  id="new-capteur-ip"
+                  value={createForm.adresse_ip}
+                  onChange={(event) => setCreateForm({ ...createForm, adresse_ip: event.target.value })}
+                  placeholder="192.168.1.100"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-port">{t('port')}</Label>
+                <Input
+                  id="new-capteur-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={createForm.port}
+                  onChange={(event) => setCreateForm({ ...createForm, port: Number(event.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-reseau">{t('typeReseau')}</Label>
+                <Select
+                  value={createForm.type_reseau}
+                  onValueChange={(value) => {
+                    if (value === 'LAN' || value === 'NETBIRD') setCreateForm({ ...createForm, type_reseau: value });
+                  }}
+                >
+                  <SelectTrigger id="new-capteur-reseau" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LAN">LAN</SelectItem>
+                    <SelectItem value="NETBIRD">NETBIRD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-statut">{t('statut')}</Label>
+                <Select
+                  value={createForm.statut}
+                  onValueChange={(value) => {
+                    if (value === 'ACTIF' || value === 'INACTIF' || value === 'HORS_LIGNE') setCreateForm({ ...createForm, statut: value });
+                  }}
+                >
+                  <SelectTrigger id="new-capteur-statut" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIF">{t('actif')}</SelectItem>
+                    <SelectItem value="INACTIF">{t('inactif')}</SelectItem>
+                    <SelectItem value="HORS_LIGNE">{t('horsLigne')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-serial">{t('numeroSerie')}</Label>
+                <Input
+                  id="new-capteur-serial"
+                  value={createForm.numero_serie ?? ''}
+                  onChange={(event) => setCreateForm({ ...createForm, numero_serie: event.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-capteur-comkey">Communication key</Label>
+                <Input
+                  id="new-capteur-comkey"
+                  value={createForm.com_key ?? ''}
+                  onChange={(event) => setCreateForm({ ...createForm, com_key: event.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>{tCommon('cancel')}</Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending && <RefreshCw aria-hidden="true" className="size-4 animate-spin" />}
+                {t('ajouter')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={editingCapteur !== null}

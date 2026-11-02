@@ -477,7 +477,9 @@
     "selectionnes": "capteur(s) sélectionné(s)",
     "aucuneSync": "Jamais synchronisé",
     "synchronisationReussie": "Synchronisation terminée",
-    "miseAJourReussie": "Capteur mis à jour"
+    "miseAJourReussie": "Capteur mis à jour",
+    "creationReussie": "Capteur créé avec succès",
+    "descriptionAjout": "Enregistrez les informations réseau du nouveau capteur."
   },
   "employes": {
     "title": "Employés",

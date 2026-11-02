@@ -30,6 +30,13 @@ export interface CapteurUpdate {
   statut: Capteur['statut'];
 }
 
+export interface CapteurCreate extends CapteurUpdate {
+  numero_serie?: string;
+  com_key?: string;
+  timeout_secondes?: number;
+  notes?: string;
+}
+
 /** Récupère les capteurs visibles par le tenant connecté. */
 export function useCapteurs(filters: CapteursFilters = {}) {
   return useQuery({
@@ -124,6 +131,25 @@ export function useSyncCapteur() {
         queryClient.invalidateQueries({ queryKey: ['capteurs'] }),
         queryClient.invalidateQueries({ queryKey: ['capteurs', variables.capteurId] }),
       ]);
+    },
+  });
+}
+
+/** Crée un nouveau capteur dans le tenant connecté. */
+export function useCreateCapteur() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CapteurCreate) => {
+      const response = await api.post<{ success: boolean; data: Capteur }>(
+        '/api/capteurs',
+        data
+      );
+      return response.data.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['capteurs'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard', 'kpis'] });
     },
   });
 }

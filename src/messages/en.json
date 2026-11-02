@@ -477,7 +477,9 @@
     "selectionnes": "sensor(s) selected",
     "aucuneSync": "Never synchronized",
     "synchronisationReussie": "Synchronization completed",
-    "miseAJourReussie": "Sensor updated"
+    "miseAJourReussie": "Sensor updated",
+    "creationReussie": "Sensor created successfully",
+    "descriptionAjout": "Register the network information for the new sensor."
   },
   "employes": {
     "title": "Employees",
