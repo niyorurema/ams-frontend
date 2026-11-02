@@ -39,6 +39,8 @@ const defaultConfiguration: TenantConfigUpdate = {
   slogan: '',
   primary_color: '#1f2937',
   secondary_color: '#f3f4f6',
+  sidebar_color: '#ffffff',
+  topbar_color: '#ffffff',
   font_family: 'Inter',
   font_size: 'normal',
   timezone: 'Africa/Bujumbura',
@@ -87,6 +89,8 @@ export default function TenantSettingsPage() {
     slogan: configuration?.slogan ?? defaultConfiguration.slogan,
     primary_color: configuration?.primary_color ?? defaultConfiguration.primary_color,
     secondary_color: configuration?.secondary_color ?? defaultConfiguration.secondary_color,
+    sidebar_color: configuration?.sidebar_color ?? defaultConfiguration.sidebar_color,
+    topbar_color: configuration?.topbar_color ?? defaultConfiguration.topbar_color,
     font_family: configuration?.font_family ?? defaultConfiguration.font_family,
     font_size: configuration?.font_size ?? defaultConfiguration.font_size,
     timezone: configuration?.timezone ?? defaultConfiguration.timezone,
@@ -151,6 +155,8 @@ export default function TenantSettingsPage() {
         slogan: saved.slogan ?? '',
         primary_color: saved.primary_color ?? defaultConfiguration.primary_color,
         secondary_color: saved.secondary_color ?? defaultConfiguration.secondary_color,
+        sidebar_color: saved.sidebar_color ?? defaultConfiguration.sidebar_color,
+        topbar_color: saved.topbar_color ?? defaultConfiguration.topbar_color,
         font_family: saved.font_family ?? 'Inter',
         font_size: saved.font_size ?? 'normal',
         timezone: saved.timezone ?? 'Africa/Bujumbura',
@@ -177,6 +183,8 @@ export default function TenantSettingsPage() {
         slogan: saved.slogan ?? '',
         primary_color: saved.primary_color ?? defaultConfiguration.primary_color,
         secondary_color: saved.secondary_color ?? defaultConfiguration.secondary_color,
+        sidebar_color: saved.sidebar_color ?? defaultConfiguration.sidebar_color,
+        topbar_color: saved.topbar_color ?? defaultConfiguration.topbar_color,
         font_family: saved.font_family ?? 'Inter',
         font_size: saved.font_size ?? 'normal',
         timezone: saved.timezone ?? 'Africa/Bujumbura',
@@ -196,6 +204,8 @@ export default function TenantSettingsPage() {
             slogan: configuration.slogan ?? '',
             primary_color: configuration.primary_color ?? defaultConfiguration.primary_color,
             secondary_color: configuration.secondary_color ?? defaultConfiguration.secondary_color,
+            sidebar_color: configuration.sidebar_color ?? defaultConfiguration.sidebar_color,
+            topbar_color: configuration.topbar_color ?? defaultConfiguration.topbar_color,
             font_family: configuration.font_family ?? 'Inter',
             font_size: configuration.font_size ?? 'normal',
             timezone: configuration.timezone ?? 'Africa/Bujumbura',
@@ -400,6 +410,8 @@ export default function TenantSettingsPage() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <ColorInput id="primary-color" label={t('primaryColor')} value={values.primary_color} onChange={(primary_color) => updateDraft({ primary_color })} />
           <ColorInput id="secondary-color" label={t('secondaryColor')} value={values.secondary_color} onChange={(secondary_color) => updateDraft({ secondary_color })} />
+          <ColorInput id="sidebar-color" label={t('sidebarColor')} value={values.sidebar_color} onChange={(sidebar_color) => updateDraft({ sidebar_color })} />
+          <ColorInput id="topbar-color" label={t('topbarColor')} value={values.topbar_color} onChange={(topbar_color) => updateDraft({ topbar_color })} />
         </CardContent>
       </Card>
 

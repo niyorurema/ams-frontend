@@ -30,7 +30,7 @@ export type NavigationPosition = 'left' | 'top' | 'bottom';
 /** État des préférences utilisateur. */
 interface PreferencesState {
   /** Langue préférée. */
-  locale: 'fr' | 'en' | 'rn';
+  locale: 'fr' | 'en';
   /** Police et taille, ou configuration visuelle par défaut du tenant. */
   fontFamily: PreferenceFontFamily;
   fontSize: PreferenceFontSize;
@@ -48,7 +48,7 @@ interface PreferencesState {
   navigationPosition: NavigationPosition;
   /** Type du graphique d'évolution des pointages. */
   attendanceChartType: EvolutionChartType;
-  setLocale: (locale: 'fr' | 'en' | 'rn') => void;
+  setLocale: (locale: 'fr' | 'en') => void;
   setFontFamily: (fontFamily: PreferenceFontFamily) => void;
   setFontSize: (fontSize: PreferenceFontSize) => void;
   setPrimaryColor: (primaryColor: PrimaryColorPreference) => void;
@@ -146,6 +146,9 @@ export const usePreferencesStore = create<PreferencesState>()(
         return {
           ...currentState,
           ...persisted,
+          locale: persisted?.locale === 'fr' || persisted?.locale === 'en'
+            ? persisted.locale
+            : 'fr',
           primaryColor:
             persisted?.primaryColor === 'black'
             || persisted?.primaryColor === 'blue'

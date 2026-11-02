@@ -82,6 +82,7 @@ export interface UserInput {
   employe_id: number | null;
   password?: string;
   is_active?: boolean;
+  is_super_admin?: boolean;
   webauthn_enrollment_approved?: boolean;
 }
 

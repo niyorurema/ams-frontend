@@ -50,7 +50,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           setNavigationPosition('bottom');
         }}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 flex-col border-r bg-card transition-[width,transform] duration-200 md:w-[var(--sidebar-width)]',
+          'fixed inset-y-0 left-0 z-40 flex h-dvh w-64 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 md:w-[var(--sidebar-width)]',
           navigationPosition === 'left' ? 'md:static md:translate-x-0' : 'md:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           !sidebarOpen && 'md:!w-16',
@@ -75,7 +75,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   <Building2 aria-hidden="true" className="size-4" />
                 </span>
               )}
-              <span className="truncate font-semibold">{tenant?.name || 'AMS'}</span>
+              <span className="truncate font-semibold text-current">{tenant?.name || 'AMS'}</span>
             </div>
           )}
           <Button

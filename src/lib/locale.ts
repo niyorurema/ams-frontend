@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 
-const supportedLocales = ['fr', 'en', 'rn'] as const;
+const supportedLocales = ['fr', 'en'] as const;
 type Locale = (typeof supportedLocales)[number];
 
 function isLocale(locale: string): locale is Locale {

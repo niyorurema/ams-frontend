@@ -104,7 +104,7 @@ export function PrimaryNavigation({
           'flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
           isActive
             ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground',
           horizontal && 'min-h-10 shrink-0 whitespace-nowrap',
           collapsed && 'md:justify-center md:px-2',
         )}

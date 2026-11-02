@@ -17,7 +17,6 @@ import { usePreferencesStore } from '@/stores/preferencesStore';
 const locales = [
   { code: 'fr', label: 'Français' },
   { code: 'en', label: 'English' },
-  { code: 'rn', label: 'Kirundi' },
 ] as const;
 
 type Locale = (typeof locales)[number]['code'];

@@ -75,6 +75,7 @@ const initialForm: UserInput = {
   employe_id: null,
   password: '',
   is_active: true,
+  is_super_admin: false,
   webauthn_enrollment_approved: false,
 };
 
@@ -147,6 +148,7 @@ export default function UtilisateursPage() {
       role: user.role,
       employe_id: user.employe_id,
       is_active: user.is_active,
+      is_super_admin: user.is_super_admin,
       webauthn_enrollment_approved: user.webauthn_enrollment_approved,
     });
     setFormOpen(true);
@@ -155,13 +157,20 @@ export default function UtilisateursPage() {
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      const payload = { ...form };
+      if (payload.role !== 'admin' && payload.is_super_admin) {
+        payload.role = 'admin';
+      }
+      if (currentUser?.is_super_admin && payload.is_super_admin && payload.role !== 'admin') {
+        payload.role = 'admin';
+      }
       if (editingUser) {
-        const update = { ...form };
+        const update = { ...payload };
         delete update.password;
         await updateUser.mutateAsync({ ...update, id: editingUser.id });
         toast.success(t('updated'));
       } else {
-        await createUser.mutateAsync(form);
+        await createUser.mutateAsync(payload);
         toast.success(t('created'));
       }
       setFormOpen(false);
@@ -474,6 +483,23 @@ export default function UtilisateursPage() {
                 <div className="flex items-center justify-between rounded-lg border p-3 sm:col-span-2">
                   <Label htmlFor="user-active">{t('actif')}</Label>
                   <Switch id="user-active" checked={Boolean(form.is_active)} onCheckedChange={(is_active) => setForm({ ...form, is_active })} />
+                </div>
+              )}
+              {currentUser?.is_super_admin && (
+                <div className="rounded-lg border p-3 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="user-super-admin">{t('superAdmin')}</Label>
+                    <Switch
+                      id="user-super-admin"
+                      checked={Boolean(form.is_super_admin)}
+                      onCheckedChange={(is_super_admin) => setForm({
+                        ...form,
+                        is_super_admin,
+                        role: is_super_admin ? 'admin' : form.role,
+                      })}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{t('superAdminHelp')}</p>
                 </div>
               )}
               {editingUser && editingUser.employe_id !== null

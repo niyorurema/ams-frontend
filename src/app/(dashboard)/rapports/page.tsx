@@ -699,7 +699,7 @@ export default function RapportsPage() {
                 <Select value={form.langue} onValueChange={(value) => value && setForm({ ...form, langue: value as RapportPlanifieCreate['langue'] })}>
                   <SelectTrigger id="planifie-langue" className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(['fr', 'en', 'rn'] as const).map((langue) => <SelectItem key={langue} value={langue}>{t(`langues.${langue}`)}</SelectItem>)}
+                    {(['fr', 'en'] as const).map((langue) => <SelectItem key={langue} value={langue}>{t(`langues.${langue}`)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

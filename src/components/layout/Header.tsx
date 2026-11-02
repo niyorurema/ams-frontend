@@ -78,7 +78,8 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
     <header
       onDoubleClick={handleDoubleClick}
       title={navigationPosition === 'bottom' ? t('restoreNavigationLeft') : undefined}
-      className="grid h-16 shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] items-center gap-2 border-b bg-card px-2 sm:px-4"
+      className="grid h-16 shrink-0 grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] items-center gap-2 border-b bg-[var(--header-background)] px-2 text-[var(--header-foreground)] sm:px-4"
+      style={{ backgroundColor: tenant?.topbar_color ?? undefined, color: tenant?.topbar_color ? 'var(--header-foreground)' : undefined }}
     >
       <div className="flex min-w-0 items-center gap-1">
         <Button

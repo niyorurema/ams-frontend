@@ -75,6 +75,10 @@ export function TenantAppearance() {
     const secondary = /^#[\da-f]{6}$/i.test(configuredSecondary)
       ? configuredSecondary
       : '#858779';
+    const configuredSidebar = configuration?.sidebar_color ?? '#ffffff';
+    const sidebar = /^#[\da-f]{6}$/i.test(configuredSidebar) ? configuredSidebar : '#ffffff';
+    const configuredTopbar = configuration?.topbar_color ?? '#ffffff';
+    const topbar = /^#[\da-f]{6}$/i.test(configuredTopbar) ? configuredTopbar : '#ffffff';
 
     const applyTenantColors = () => {
       root.style.setProperty('--primary', primary);
@@ -83,6 +87,10 @@ export function TenantAppearance() {
       root.style.setProperty('--sidebar-primary-foreground', foregroundFor(primary));
       root.style.setProperty('--ring', primary);
       root.style.setProperty('--sidebar-ring', primary);
+      root.style.setProperty('--sidebar', sidebar);
+      root.style.setProperty('--sidebar-foreground', foregroundFor(sidebar));
+      root.style.setProperty('--header-background', topbar);
+      root.style.setProperty('--header-foreground', foregroundFor(topbar));
       if (configuration && !root.classList.contains('dark')) {
         root.style.setProperty('--secondary', secondary);
         root.style.setProperty('--secondary-foreground', foregroundFor(secondary));
@@ -114,6 +122,10 @@ export function TenantAppearance() {
       root.style.removeProperty('--sidebar-primary-foreground');
       root.style.removeProperty('--ring');
       root.style.removeProperty('--sidebar-ring');
+      root.style.removeProperty('--sidebar');
+      root.style.removeProperty('--sidebar-foreground');
+      root.style.removeProperty('--header-background');
+      root.style.removeProperty('--header-foreground');
       root.style.removeProperty('--secondary');
       root.style.removeProperty('--secondary-foreground');
       root.style.removeProperty('--font-sans');

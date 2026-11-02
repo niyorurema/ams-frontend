@@ -68,7 +68,7 @@ export interface RapportEmployeVisible {
 
 export type RapportPlanifieType = 'QUOTIDIEN' | 'HEBDOMADAIRE' | 'MENSUEL';
 export type RapportFormat = 'PDF' | 'EXCEL' | 'HTML';
-export type RapportLangue = 'fr' | 'en' | 'rn';
+export type RapportLangue = 'fr' | 'en';
 export type RapportPerimetreType =
   | 'EQUIPE'
   | 'SERVICE'

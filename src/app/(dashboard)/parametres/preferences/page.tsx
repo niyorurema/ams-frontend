@@ -51,7 +51,6 @@ import {
 const locales = [
   { code: 'fr', label: 'Français', flag: '🇫🇷' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
-  { code: 'rn', label: 'Kirundi', flag: '🇧🇮' },
 ] as const;
 
 type Locale = (typeof locales)[number]['code'];

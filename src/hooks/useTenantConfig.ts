@@ -9,6 +9,8 @@ export interface TenantConfigUpdate {
   slogan: string;
   primary_color: string;
   secondary_color: string;
+  sidebar_color: string;
+  topbar_color: string;
   font_family: string;
   font_size: string;
   timezone?: string;

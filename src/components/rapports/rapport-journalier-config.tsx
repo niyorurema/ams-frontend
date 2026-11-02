@@ -350,7 +350,6 @@ export function RapportJournalierConfig() {
                   <SelectContent>
                     <SelectItem value="fr">Français</SelectItem>
                     <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="rn">Kirundi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

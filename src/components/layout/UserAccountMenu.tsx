@@ -56,10 +56,10 @@ export function UserAccountMenu({ compact = false }: UserAccountMenuProps) {
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             {!compact && (
-              <span className="min-w-0 flex-1 text-left">
-                <span className="block truncate text-sm font-medium">{user?.nom_complet || t('userMenu')}</span>
+              <span className="min-w-0 flex-1 text-left text-current">
+                <span className="block truncate text-sm font-medium text-current">{user?.nom_complet || t('userMenu')}</span>
                 {user?.email && (
-                  <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
+                  <span className="block truncate text-xs text-current/80">{user.email}</span>
                 )}
               </span>
             )}
