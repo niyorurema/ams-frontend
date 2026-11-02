@@ -182,7 +182,6 @@ export default function PointagesPage() {
     offset,
   };
   const pointagesQuery = usePointages(filters);
-  const countQuery = usePointages({ limit: 1, offset: 0 });
   const statsQuery = useStatsPointages(period.debut, period.fin);
   const capteursQuery = useCapteurs({ limit: 1000, offset: 0 });
   const employesQuery = useEmployes({ limit: 1000, offset: 0 });
@@ -263,7 +262,7 @@ export default function PointagesPage() {
           </div>
           <h1 className="text-2xl font-semibold">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {t('totalPointages', { count: numberFormat.format(countQuery.data?.pagination.total ?? 0) })}
+            {t('totalPointages', { count: numberFormat.format(total) })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
