@@ -118,6 +118,8 @@ export default function IntegrationsSettingsPage() {
 
   const previsualiserSynchronisationGpio = async () => {
     try {
+      await saveSettings.mutateAsync({ gpio });
+      setGpioDraft({ ...gpio, password: '' });
       await previewGpioSync.mutateAsync();
       toast.success(t('gpioSyncPreviewSuccess'));
     } catch (error) {
@@ -133,6 +135,8 @@ export default function IntegrationsSettingsPage() {
       destructive: true,
     })) return;
     try {
+      await saveSettings.mutateAsync({ gpio });
+      setGpioDraft({ ...gpio, password: '' });
       await syncGpio.mutateAsync();
       toast.success(t('gpioSyncSuccess'));
     } catch (error) {
@@ -246,7 +250,7 @@ export default function IntegrationsSettingsPage() {
                 {previewGpioSync.isPending && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
                 {t('gpioSyncPreview')}
               </Button>
-              <Button type="button" disabled={!gpio.sync_enabled || previewGpioSync.isPending || syncGpio.isPending} onClick={() => void appliquerSynchronisationGpio()}>
+              <Button type="button" disabled={previewGpioSync.isPending || syncGpio.isPending} aria-busy={syncGpio.isPending} onClick={() => void appliquerSynchronisationGpio()}>
                 {syncGpio.isPending && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
                 {t('gpioSyncApply')}
               </Button>
