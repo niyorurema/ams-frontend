@@ -33,6 +33,29 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const navigationHistory = useRef<string[]>([]);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
+  const getPageTitle = () => {
+    if (pathname.startsWith('/admin/tenants')) return t('adminTenants');
+    if (pathname.startsWith('/parametres/profil')) return t('profil');
+    if (pathname.startsWith('/parametres/preferences')) return t('preferences');
+    if (pathname.startsWith('/parametres/tenant')) return t('tenant');
+    if (pathname.startsWith('/parametres/integrations')) return t('parametres') + ' · Intégrations';
+    if (pathname.startsWith('/parametres/ldap')) return t('parametres') + ' · LDAP';
+    if (pathname.startsWith('/parametres/jours-feries')) return t('parametres') + ' · Jours fériés';
+    if (pathname.startsWith('/parametres/pointages')) return t('parametres') + ' · Pointages';
+    if (pathname.startsWith('/parametres/shifts')) return t('parametres') + ' · Shifts';
+    if (pathname.startsWith('/parametres/utilisateurs')) return t('parametres') + ' · Utilisateurs';
+    if (pathname.startsWith('/parametres')) return t('parametres');
+    if (pathname.startsWith('/dashboard')) return t('dashboard');
+    if (pathname.startsWith('/mon-dossier')) return t('monDossier');
+    if (pathname.startsWith('/capteurs')) return t('capteurs');
+    if (pathname.startsWith('/employes')) return t('employes');
+    if (pathname.startsWith('/organisation')) return t('organisation');
+    if (pathname.startsWith('/pointages')) return t('pointages');
+    if (pathname.startsWith('/rapports')) return t('rapports');
+    return tenant?.name || 'AMS';
+  };
+  const pageTitle = getPageTitle();
+
   useEffect(() => {
     const history = navigationHistory.current;
     if (history.length === 0) {
@@ -105,15 +128,16 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
         <h1 className="truncate text-sm font-semibold sm:text-base">{tenant?.name || 'AMS'}</h1>
       </div>
 
-      <div className="min-w-0 max-w-[52vw] justify-self-center">
-        {navigationPosition === 'top' && (
-          <div className="hidden rounded-md bg-[var(--header-background)] px-1 py-1 text-[var(--header-foreground)] md:block">
-            <PrimaryNavigation orientation="horizontal" />
-          </div>
-        )}
+      <div className={`pointer-events-none hidden min-w-0 justify-self-center self-center text-center md:block md:max-w-[min(32vw,420px)] ${navigationPosition === 'top' ? 'md:translate-x-20' : ''}`}>
+        <h1 className="truncate text-base font-semibold" title={pageTitle}>{pageTitle}</h1>
       </div>
 
       <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
+        {navigationPosition === 'top' && (
+          <div className="hidden min-w-0 max-w-[38vw] overflow-hidden rounded-md px-1 py-1 lg:block">
+            <PrimaryNavigation orientation="horizontal" />
+          </div>
+        )}
         <Button
           type="button"
           variant="ghost"
