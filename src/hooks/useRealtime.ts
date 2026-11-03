@@ -24,11 +24,11 @@ export interface PointageRealtimeEvent {
 
 /** Maintient un flux SSE authentifié et reprend après les déconnexions. */
 export function useRealtimePointages() {
-  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const router = useRouter();
   const queryClient = useQueryClient();
   const tenantId = useAuthStore((state) => state.user?.tenant_id);
-  const scope = `${tenantId ?? 'unknown'}:${token ?? ''}`;
+  const scope = `${tenantId ?? 'unknown'}`;
   const [eventState, setEventState] = useState<{
     scope: string;
     events: PointageRealtimeEvent[];
@@ -40,8 +40,7 @@ export function useRealtimePointages() {
 
   useEffect(() => {
     const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/realtime/pointages`;
-    console.log('[SSE] Token:', token ? 'présent' : 'absent');
-    if (!token) return;
+    if (!isAuthenticated) return;
 
     const controller = new AbortController();
     const cleCurseur = `ams-pointages-cursor-${tenantId ?? 'unknown'}`;
@@ -55,7 +54,6 @@ export function useRealtimePointages() {
           const response = await fetch(url, {
             headers: {
               Accept: 'text/event-stream',
-              Authorization: `Bearer ${token}`,
               ...(dernierId ? { 'Last-Event-ID': dernierId } : {}),
             },
             cache: 'no-store',
@@ -152,10 +150,11 @@ export function useRealtimePointages() {
       controller.abort();
       window.clearTimeout(minuterieActualisation);
     };
-  }, [queryClient, router, scope, tenantId, token]);
+  }, [queryClient, router, scope, tenantId, isAuthenticated]);
 
   return {
     events: eventState.scope === scope ? eventState.events : [],
-    connected: Boolean(token) && connectionState.scope === scope && connectionState.connected,
+    connected: isAuthenticated && connectionState.scope === scope && connectionState.connected,
   };
 }
+

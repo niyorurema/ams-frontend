@@ -19,12 +19,10 @@ export interface User {
 interface AuthState {
   /** Utilisateur connecté (null si non connecté). */
   user: User | null;
-  /** Token JWT (null si non connecté). */
-  token: string | null;
-  /** Indique si l'utilisateur est authentifié. */
+  /** Indique si l'utilisateur est authentifié côté interface. */
   isAuthenticated: boolean;
-  /** Enregistre l'utilisateur et le token après login. */
-  setAuth: (user: User, token: string) => void;
+  /** Enregistre l'utilisateur après login; la session utilise exclusivement un cookie HttpOnly. */
+  setAuth: (user: User) => void;
   /** Efface les données d'authentification (logout). */
   clearAuth: () => void;
   /** Met à jour partiellement les données de l'utilisateur. */
@@ -36,13 +34,12 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: null,
       isAuthenticated: false,
 
-      setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
+      setAuth: (user) => set({ user, isAuthenticated: true }),
 
       clearAuth: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+        set({ user: null, isAuthenticated: false }),
 
       updateUser: (partialUser) =>
         set((state) => ({
@@ -51,9 +48,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'ams-auth',
+      version: 1,
+      migrate: (persistedState) => {
+        if (typeof persistedState !== 'object' || persistedState === null) return persistedState;
+        const migrated = { ...persistedState } as Record<string, unknown>;
+        delete migrated.token;
+        return migrated as unknown as AuthState;
+      },
       partialize: (state) => ({
         user: state.user,
-        token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
     }

@@ -11,8 +11,8 @@ export interface LoginCredentials {
 /** Réponse du backend après une connexion réussie. */
 export interface LoginResponse {
   user: User;
-  access_token: string;
-  auth_source: 'LOCAL' | 'LDAP';
+  expires_in: number;
+  auth_source?: 'LOCAL' | 'LDAP';
 }
 
 /** Connecte un utilisateur et enregistre sa session dans le store. */
@@ -24,9 +24,9 @@ export async function login(
     credentials
   );
 
-  const { user, access_token } = response.data.data;
+  const { user } = response.data.data;
   useTenantStore.getState().clearTenant();
-  useAuthStore.getState().setAuth(user, access_token);
+  useAuthStore.getState().setAuth(user);
 
   return response.data.data;
 }

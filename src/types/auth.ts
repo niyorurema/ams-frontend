@@ -10,6 +10,6 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
   user: User;
-  access_token: string;
-  auth_source: 'LOCAL' | 'LDAP';
+  expires_in: number;
+  auth_source?: 'LOCAL' | 'LDAP';
 }

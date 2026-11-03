@@ -23,9 +23,10 @@ export const api: AxiosInstance = axios.create({
     Accept: 'application/json',
   },
   timeout: 30_000,
+  withCredentials: true,
 });
 
-/** Ajoute le token JWT aux requêtes authentifiées. */
+/** Ajoute les cookies HttpOnly de session aux requêtes authentifiées. */
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     const method = String(config.method || 'GET').toUpperCase();
@@ -55,8 +56,6 @@ api.interceptors.request.use(
       customConfig._amsConfirmationChecked = true;
     }
 
-    const token = useAuthStore.getState().token;
-    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error: AxiosError) => Promise.reject(error)
@@ -129,3 +128,4 @@ export function getErrorMessage(error: unknown): string {
 
   return 'Une erreur inconnue est survenue';
 }
+
