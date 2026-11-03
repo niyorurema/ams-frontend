@@ -27,6 +27,14 @@ export interface DashboardRecentPointage {
 
 export interface DashboardKpis {
   date: string;
+  updated_at?: string;
+  comparaison_hier?: {
+    attendus: number;
+    presents: number;
+    en_retard: number;
+    absents: number;
+    en_cours: number;
+  } | null;
   employes: {
     total: number;
     attendus_aujourdhui: number;
@@ -36,7 +44,7 @@ export interface DashboardKpis {
     en_cours: number;
     sans_pointage_depart: number;
   };
-  pointages: { aujourdhui: number };
+  pointages: { aujourdhui: number; entrees: number; sorties: number };
   pointages_recents: DashboardRecentPointage[];
   capteurs: {
     actifs: number;

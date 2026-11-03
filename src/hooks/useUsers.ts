@@ -141,6 +141,7 @@ export interface PersonalAttendanceHistory {
     totaux: {
       retard_total_minutes: number;
       jours_absence: number;
+      jours_presence: number;
       heures_travaillees_minutes: number;
       jours_anormaux: number;
       pointages_anormaux: number;

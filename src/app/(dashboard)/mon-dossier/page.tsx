@@ -76,6 +76,7 @@ export default function MonDossierPage() {
   const [matriculeRecherche, setMatriculeRecherche] = useState('');
   const [periodeFin, setPeriodeFin] = useState('');
   const [periodeDebut, setPeriodeDebut] = useState('');
+  const [activeTab, setActiveTab] = useState<'aujourdhui' | 'historique' | 'evaluation' | 'compte'>('aujourdhui');
   const [serverClock, setServerClock] = useState<number | null>(null);
   const profileQuery = useCurrentProfile(Boolean(user));
   const canSearchMatricule = user?.is_super_admin === true
@@ -179,7 +180,24 @@ export default function MonDossierPage() {
         </Link>
       </header>
 
-      {peutConsulterPresence ? (
+      <nav aria-label="Sections du dossier" className="flex flex-wrap gap-2 rounded-lg border bg-muted/30 p-1">
+        {([
+          ['aujourdhui', 'Aujourd’hui'],
+          ['historique', 'Historique'],
+          ['evaluation', 'Évaluation'],
+          ['compte', 'Compte'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-current={activeTab === value ? 'page' : undefined}
+            onClick={() => setActiveTab(value)}
+            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === value ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >{label}</button>
+        ))}
+      </nav>
+
+      {activeTab !== 'compte' && peutConsulterPresence ? (
         <section aria-labelledby="personal-attendance-title" className="space-y-6">
           {attendanceQuery.isLoading ? (
             <Skeleton className="h-72 w-full" />
@@ -201,7 +219,7 @@ export default function MonDossierPage() {
             </Card>
           ) : (
             <>
-              <Card>
+              <Card className={activeTab !== 'aujourdhui' ? 'hidden' : undefined}>
                 <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <CardTitle id="personal-attendance-title" className="flex items-center gap-2">
@@ -373,6 +391,8 @@ export default function MonDossierPage() {
                           disabled={!nextExpected || createPersonalPunch.isPending}
                           onClick={() => {
                             if (!nextExpected) return;
+                            const confirmed = window.confirm(`Confirmer le pointage « ${t(`punchTypes.${nextExpected}`)} » à l’heure du serveur ?`);
+                            if (!confirmed) return;
                             void createPersonalPunch.mutateAsync(nextExpected)
                               .then(() => toast.success(t('punchSuccess')))
                               .catch((error: unknown) => toast.error(getUsersErrorMessage(error)));
@@ -424,7 +444,7 @@ export default function MonDossierPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={activeTab !== 'historique' ? 'hidden' : undefined}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <History aria-hidden="true" className="size-5" />
@@ -450,7 +470,7 @@ export default function MonDossierPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className={activeTab !== 'evaluation' ? 'hidden' : undefined}>
                 <CardHeader>
                   <CardTitle>{t('selfEvaluationTitle')}</CardTitle>
                   <CardDescription>                  {t('selfEvaluationDescription', { start: formatDate(periodeDebutEffective, locale, t('notAvailable')), end: formatDate(periodeFinEffective, locale, t('notAvailable')) })}</CardDescription>
@@ -459,10 +479,27 @@ export default function MonDossierPage() {
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="grid gap-1 text-xs text-muted-foreground">{t('periodStart')}<Input type="date" max={periodeFinEffective} value={periodeDebutEffective} onChange={(event) => setPeriodeDebut(event.target.value)} /></label>
                     <label className="grid gap-1 text-xs text-muted-foreground">{t('periodEnd')}<Input type="date" min={periodeDebutEffective} max={dateAujourdhui} value={periodeFinEffective} onChange={(event) => setPeriodeFin(event.target.value)} /></label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const rows = attendanceQuery.data?.evaluation?.jours ?? [];
+                        const csv = ['Date,Statut,Présences minutes,Retards minutes', ...rows.map((day) => `${day.date},${day.statut},${day.heures_travaillees_minutes},${day.retard_minutes}`)].join('\n');
+                        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `mon-dossier-${periodeDebutEffective}-${periodeFinEffective}.csv`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                    >Exporter CSV</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>Exporter PDF / Imprimer</Button>
                   </div>
                   {attendanceQuery.data.evaluation && (
                     <>
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Présences</p><p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.evaluation.totaux.jours_presence ?? 0}</p></div>
                         <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodLate')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceQuery.data.evaluation.totaux.retard_total_minutes, t('hours'), t('minutes'))}</p></div>
                         <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodAbsences')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.evaluation.totaux.jours_absence}</p></div>
                         <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodWorked')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceQuery.data.evaluation.totaux.heures_travaillees_minutes, t('hours'), t('minutes'))}</p></div>
@@ -524,7 +561,7 @@ export default function MonDossierPage() {
         </div>
       )}
 
-      <Card>
+      <Card className={activeTab !== 'compte' ? 'hidden' : undefined}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserRound aria-hidden="true" className="size-5" />
@@ -553,7 +590,7 @@ export default function MonDossierPage() {
         </CardContent>
       </Card>
 
-      {employee ? (
+      {employee && activeTab === 'compte' ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

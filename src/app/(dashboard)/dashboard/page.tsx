@@ -47,8 +47,20 @@ export default function DashboardPage() {
     stats.map((stat) => [stat.id, stat]),
   );
 
+  const variationPresents = kpis?.comparaison_hier
+    ? kpis.employes.presents - kpis.comparaison_hier.presents
+    : null;
+
   return (
     <div className="w-full space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>{t('title')}</span>
+        {kpis?.updated_at && (
+          <time dateTime={kpis.updated_at}>
+            Mise à jour : {format(parseISO(kpis.updated_at), 'HH:mm:ss')}
+          </time>
+        )}
+      </div>
       {visibleWidgets.length > 0 ? (
         <section
           aria-label={t('title')}
@@ -58,8 +70,16 @@ export default function DashboardPage() {
             const stat = statsByWidget.get(widget.id);
             if (stat) {
               const Icon = stat.icon;
+              const href = stat.id === 'stats-employes' || stat.id === 'stats-retards'
+                ? '/employes'
+                : stat.id === 'stats-capteurs'
+                  ? '/capteurs'
+                  : stat.id === 'stats-pointages' || stat.id === 'stats-presence'
+                    ? '/pointages'
+                    : '/parametres/pointages';
               return (
-                <Card key={widget.id} data-widget-id={widget.id}>
+                <Link key={widget.id} href={href} className="block rounded-xl transition-transform hover:-translate-y-0.5">
+                <Card data-widget-id={widget.id} className="h-full cursor-pointer transition-shadow hover:shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                       {t(stat.key)}
@@ -78,8 +98,19 @@ export default function DashboardPage() {
                           : stat.value}
                       </p>
                     )}
+                    {!dashboardKpis.isLoading && !dashboardKpis.isError && stat.id === 'stats-presence' && variationPresents !== null && (
+                      <p className={`mt-1 text-xs ${variationPresents >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                        {variationPresents >= 0 ? '+' : ''}{variationPresents} présence(s) par rapport à hier
+                      </p>
+                    )}
+                    {!dashboardKpis.isLoading && !dashboardKpis.isError && stat.id === 'stats-pointages' && kpis && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {kpis.pointages.entrees} entrées · {kpis.pointages.sorties} sorties
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
+                </Link>
               );
             }
 
