@@ -391,8 +391,6 @@ export default function MonDossierPage() {
                           disabled={!nextExpected || createPersonalPunch.isPending}
                           onClick={() => {
                             if (!nextExpected) return;
-                            const confirmed = window.confirm(`Confirmer le pointage « ${t(`punchTypes.${nextExpected}`)} » à l’heure du serveur ?`);
-                            if (!confirmed) return;
                             void createPersonalPunch.mutateAsync(nextExpected)
                               .then(() => toast.success(t('punchSuccess')))
                               .catch((error: unknown) => toast.error(getUsersErrorMessage(error)));

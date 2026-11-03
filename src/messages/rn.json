@@ -11,6 +11,16 @@
     "export": "Kuvana",
     "close": "Funga",
     "confirm": "Emeza",
+    "confirmationMutating": {
+      "saveTitle": "Emeza ububiko",
+      "saveMessage": "Urashaka kubika iyi mpinduka?",
+      "deleteTitle": "Emeza gusiba",
+      "deleteMessage": "Iyi sibyo canke guhagarika bizoba bidashobora gusubirwamwo. Urashaka gukomeza?",
+      "cancelTitle": "Emeza guhagarika",
+      "cancelMessage": "Impinduka zitabitswe zizoba zaburitswe. Urashaka gukomeza?",
+      "defaultTitle": "Emeza impinduka",
+      "defaultMessage": "Iki gikorwa kizohindura amakuru canke igenamiterere. Urashaka gukomeza?"
+    },
     "yes": "Ego",
     "no": "Oya",
     "actions": "Ibikorwa",

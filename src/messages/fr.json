@@ -11,6 +11,16 @@
     "export": "Exporter",
     "close": "Fermer",
     "confirm": "Confirmer",
+    "confirmationMutating": {
+      "saveTitle": "Confirmer l’enregistrement",
+      "saveMessage": "Voulez-vous enregistrer cette modification ?",
+      "deleteTitle": "Confirmer la suppression",
+      "deleteMessage": "Cette suppression ou désactivation est définitive. Voulez-vous continuer ?",
+      "cancelTitle": "Confirmer l’annulation",
+      "cancelMessage": "Les modifications non enregistrées seront perdues. Voulez-vous continuer ?",
+      "defaultTitle": "Confirmer la modification",
+      "defaultMessage": "Cette action modifiera des données ou la configuration. Voulez-vous continuer ?"
+    },
     "yes": "Oui",
     "no": "Non",
     "actions": "Actions",

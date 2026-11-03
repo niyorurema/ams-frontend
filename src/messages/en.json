@@ -11,6 +11,16 @@
     "export": "Export",
     "close": "Close",
     "confirm": "Confirm",
+    "confirmationMutating": {
+      "saveTitle": "Confirm save",
+      "saveMessage": "Do you want to save this change?",
+      "deleteTitle": "Confirm deletion",
+      "deleteMessage": "This deletion or deactivation is final. Do you want to continue?",
+      "cancelTitle": "Confirm cancellation",
+      "cancelMessage": "Unsaved changes will be lost. Do you want to continue?",
+      "defaultTitle": "Confirm change",
+      "defaultMessage": "This action will modify data or configuration. Do you want to continue?"
+    },
     "yes": "Yes",
     "no": "No",
     "actions": "Actions",

@@ -4,6 +4,12 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { useAuthStore } from '@/stores/authStore';
+import {
+  confirmerAvecSweetAlert,
+  confirmationHasBeenHandled,
+  getMutationConfirmationCopy,
+  consommerConfirmationGeree,
+} from '@/lib/confirmation';
 
 /** URL de base de l'API, configurable via NEXT_PUBLIC_API_URL. */
 export const API_BASE_URL =
@@ -21,13 +27,36 @@ export const api: AxiosInstance = axios.create({
 
 /** Ajoute le token JWT aux requêtes authentifiées. */
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().token;
+  async (config: InternalAxiosRequestConfig) => {
+    const method = String(config.method || 'GET').toUpperCase();
+    const url = String(config.url || '').toLowerCase();
+    const mutatingMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const safeMutation = !mutatingMethod
+      || url.includes('/login') || url.includes('/logout')
+      || url.includes('/preview') || url.includes('/test')
+      || url.includes('/options') || url.includes('/export')
+      || url.includes('/authentication-options') || url.includes('/registration-options');
+    const customConfig = config as InternalAxiosRequestConfig & { _amsConfirmationChecked?: boolean };
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!safeMutation && !customConfig._amsConfirmationChecked && typeof window !== 'undefined') {
+      if (confirmationHasBeenHandled()) {
+        consommerConfirmationGeree();
+      } else {
+        const copy = getMutationConfirmationCopy(method, url);
+        const locale = (document.documentElement.lang || 'fr').slice(0, 2);
+        const confirmText = locale === 'en' ? 'Confirm' : locale === 'rn' ? 'Emeza' : 'Confirmer';
+        const cancelText = locale === 'en' ? 'Cancel' : locale === 'rn' ? 'Reka' : 'Annuler';
+        const confirmed = await confirmerAvecSweetAlert(copy.message, {
+          title: copy.title, confirmButtonText: confirmText, cancelButtonText: cancelText, destructive: copy.destructive,
+        });
+        if (!confirmed) return Promise.reject(new axios.CanceledError('Action annulée par l’utilisateur.'));
+        consommerConfirmationGeree();
+      }
+      customConfig._amsConfirmationChecked = true;
     }
 
+    const token = useAuthStore.getState().token;
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error: AxiosError) => Promise.reject(error)

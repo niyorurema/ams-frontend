@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { Toaster } from 'sonner';
+import { MutationConfirmationGuard } from '@/components/providers/MutationConfirmationGuard';
 import "./globals.css";
 
 const inter = Inter({
@@ -39,6 +40,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
             <QueryProvider>
+              <MutationConfirmationGuard />
               {children}
               <Toaster
                 position="top-right"
