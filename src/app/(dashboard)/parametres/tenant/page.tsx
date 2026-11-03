@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getErrorMessage } from '@/lib/api';
+import { confirmerAvecSweetAlert } from '@/lib/confirmation';
 import {
   useTenantConfig,
   useUpdateTenantConfig,
@@ -148,6 +149,22 @@ export default function TenantSettingsPage() {
   };
 
   const supprimerLogo = async () => {
+    const locale = typeof document !== 'undefined'
+      ? (document.documentElement.lang || 'fr').slice(0, 2)
+      : 'fr';
+    const copy = locale === 'en'
+      ? { title: 'Remove logo', message: 'The logo and its visual reference will be removed from this organization. Do you want to continue?', confirm: 'Remove', cancel: 'Cancel' }
+      : locale === 'rn'
+        ? { title: 'Kuraho ikimenyetso', message: 'Iki kimenyetso n’ishusho yaco bizakurwa ku ishirahamwe. Urashaka gukomeza?', confirm: 'Kuraho', cancel: 'Reka' }
+        : { title: 'Supprimer le logo', message: 'Le logo et son image actuelle seront supprimés de cette organisation. Voulez-vous continuer ?', confirm: 'Supprimer', cancel: 'Annuler' };
+    const confirme = await confirmerAvecSweetAlert(copy.message, {
+      title: copy.title,
+      confirmButtonText: copy.confirm,
+      cancelButtonText: copy.cancel,
+      destructive: true,
+    });
+    if (!confirme) return;
+
     try {
       const saved = await updateMutation.mutateAsync({ ...values, logo_url: null });
       setDraft({
