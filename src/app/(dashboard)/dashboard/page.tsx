@@ -30,7 +30,7 @@ export default function DashboardPage() {
   const dashboardKpis = useDashboardKpis();
   const kpis = dashboardKpis.data;
   const tauxPresence = kpis?.employes.attendus_aujourdhui
-    ? `${Math.round(kpis.employes.presents / kpis.employes.attendus_aujourdhui * 100)}%`
+    ? `${Math.min(100, Math.max(0, Math.round(kpis.employes.presents / kpis.employes.attendus_aujourdhui * 100)))}%`
     : t('noScheduleData');
   const stats = [
     { id: 'stats-employes', key: 'totalEmployes', value: kpis?.employes.total, icon: Users, color: 'text-primary' },

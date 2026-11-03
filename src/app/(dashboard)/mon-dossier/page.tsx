@@ -518,6 +518,12 @@ export default function MonDossierPage() {
         </Card>
       )}
 
+      {(!profile.is_active || (employee && !employee.actif)) && (
+        <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Ce compte ou le dossier employé associé est actuellement inactif. Certaines fonctions sont désactivées.
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -542,8 +548,6 @@ export default function MonDossierPage() {
               }
             />
             <Detail label={t('lastLogin')} value={formatDate(profile.derniere_connexion, locale, t('notAvailable'))} />
-            <Detail label={t('accountId')} value={profile.id} />
-            <Detail label={t('tenantId')} value={profile.tenant_id} />
             <Detail label={t('superAdmin')} value={profile.is_super_admin ? t('yes') : t('no')} />
           </dl>
         </CardContent>
@@ -564,24 +568,14 @@ export default function MonDossierPage() {
               <Detail label={t('matricule')} value={employee.matricule} />
               <Detail label={t('position')} value={employee.poste} />
               <Detail label={t('unit')} value={employee.unite_nom} />
-              <Detail label={t('unitId')} value={employee.unite_id} />
               <Detail label={t('unitManager')} value={employee.est_responsable_unite ? t('yes') : t('no')} />
               <Detail label={t('employeeEmail')} value={employee.email} />
               <Detail label={t('employeePhone')} value={employee.telephone} />
               <Detail label={t('gender')} value={employee.genre ? t(`genders.${employee.genre}`) : null} />
-              <Detail label={t('photo')} value={employee.photo_url} />
               <Detail label={t('hireDate')} value={formatDate(employee.date_embauche, locale, t('notProvided'))} />
               <Detail label={t('departureDate')} value={formatDate(employee.date_depart, locale, t('notProvided'))} />
               <Detail label={t('employeeStatus')} value={<Badge variant={employee.actif ? 'default' : 'secondary'}>{employee.actif ? t('active') : t('inactive')}</Badge>} />
-              <Detail label={t('badgeId')} value={employee.badge_id} />
-              <Detail label={t('deviceUserId')} value={employee.user_id_capteur} />
-              <Detail label={t('deviceRole')} value={employee.role_capteur} />
               <Detail label={t('fingerprintStatus')} value={employee.empreinte_enrolee ? t('enrolled') : t('notEnrolled')} />
-              <Detail label={t('fingerprintCount')} value={employee.nb_empreintes} />
-              <Detail label={t('lastDeviceSync')} value={formatDate(employee.derniere_sync, locale, t('notProvided'))} />
-              <Detail label={t('recordCreated')} value={formatDate(employee.created_at, locale, t('notProvided'))} />
-              <Detail label={t('recordUpdated')} value={formatDate(employee.updated_at, locale, t('notProvided'))} />
-              <Detail label={t('employeeId')} value={employee.id} />
             </dl>
           </CardContent>
         </Card>

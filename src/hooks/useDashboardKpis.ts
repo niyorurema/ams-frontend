@@ -85,6 +85,9 @@ export function useDashboardKpis() {
       const response = await api.get<ApiResponse<DashboardKpis>>('/api/admin/dashboard/kpis');
       return response.data.data;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
