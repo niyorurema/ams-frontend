@@ -124,14 +124,15 @@ export default function LoginPage() {
                 id="email"
                 type="text"
                 autoComplete="username"
-                placeholder="nom.utilisateur"
+                placeholder={t('emailPlaceholder')}
                 aria-invalid={Boolean(errors.email)}
-                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-describedby={`email-help${errors.email ? ' email-error' : ''}`}
                 className="h-10 pl-10"
                 disabled={isLoading}
                 {...register('email')}
               />
             </div>
+            <p id="email-help" className="text-sm text-muted-foreground">{t('emailHelp')}</p>
             {errors.email && (
               <p id="email-error" className="text-sm text-destructive" role="alert">
                 {errors.email.message}
@@ -152,7 +153,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 placeholder="••••••••"
                 aria-invalid={Boolean(errors.password)}
-                aria-describedby={errors.password ? 'password-error' : undefined}
+                aria-describedby={`password-help${errors.password ? ' password-error' : ''}`}
                 className="h-10 pl-10 pr-10"
                 disabled={isLoading}
                 {...register('password')}
@@ -171,6 +172,7 @@ export default function LoginPage() {
                   : <Eye aria-hidden="true" className="size-4" />}
               </Button>
             </div>
+            <p id="password-help" className="text-sm text-muted-foreground">{t('passwordHelp')}</p>
             {errors.password && (
               <p id="password-error" className="text-sm text-destructive" role="alert">
                 {errors.password.message}
