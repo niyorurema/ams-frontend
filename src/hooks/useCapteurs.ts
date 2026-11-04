@@ -17,9 +17,12 @@ export interface CapteursResponse {
 }
 
 export interface CapteursFilters {
+  tenant_id?: number;
+  search?: string;
   limit?: number;
   offset?: number;
   statut?: Capteur['statut'] | Capteur['statut'][];
+  enabled?: boolean;
 }
 
 export interface CapteurUpdate {
@@ -49,6 +52,8 @@ export function useCapteurs(filters: CapteursFilters = {}) {
         limit: String(filters.limit ?? 10),
         offset: String(filters.offset ?? 0),
       });
+      if (filters.tenant_id !== undefined) params.set('tenant_id', String(filters.tenant_id));
+      if (filters.search) params.set('search', filters.search);
       if (filters.statut) {
         params.set('statut', Array.isArray(filters.statut) ? filters.statut.join(',') : filters.statut);
       }
@@ -59,6 +64,7 @@ export function useCapteurs(filters: CapteursFilters = {}) {
 
       return response.data.data;
     },
+    enabled: filters.enabled ?? true,
   });
 }
 

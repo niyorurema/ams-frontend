@@ -23,6 +23,7 @@ interface ComboboxProps {
   emptyMessage: string;
   id?: string;
   ariaLabel?: string;
+  onSearch?: (search: string) => void;
   disabled?: boolean;
   className?: string;
   allowAll?: boolean;
@@ -43,6 +44,7 @@ export function Combobox({
   emptyMessage,
   id,
   ariaLabel,
+  onSearch,
   disabled = false,
   className,
   allowAll = false,
@@ -74,7 +76,10 @@ export function Combobox({
       open={open}
       onOpenChange={(isOpen) => {
         setOpen(isOpen);
-        if (!isOpen) setSearch('');
+        if (!isOpen) {
+          setSearch('');
+          onSearch?.('');
+        }
       }}
     >
       <PopoverTrigger
@@ -98,10 +103,14 @@ export function Combobox({
         <Input
           autoFocus
           type="search"
+          maxLength={100}
           aria-label={searchPlaceholder}
           placeholder={searchPlaceholder}
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            onSearch?.(event.target.value);
+          }}
         />
         {optionsFiltrees.length === 0 ? (
           <p className="px-2 py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>

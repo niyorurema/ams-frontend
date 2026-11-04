@@ -6,6 +6,7 @@ import type { Capteur } from '@/types/capteur';
 import type { Employe } from '@/types/employe';
 
 export interface EmployesFilters {
+  tenant_id?: number;
   search?: string;
   unite_id?: number;
   sans_unite?: boolean;
@@ -16,6 +17,7 @@ export interface EmployesFilters {
   sync_to?: string;
   limit?: number;
   offset?: number;
+  enabled?: boolean;
 }
 
 export interface EmployesResponse {
@@ -50,6 +52,7 @@ export function useEmployes(filters: EmployesFilters = {}) {
     queryKey: ['employes', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
+      if (filters.tenant_id !== undefined) params.set('tenant_id', String(filters.tenant_id));
       if (filters.search) params.set('search', filters.search);
       if (filters.unite_id) params.set('unite_id', String(filters.unite_id));
       if (filters.sans_unite) params.set('sans_unite', '1');
@@ -69,6 +72,7 @@ export function useEmployes(filters: EmployesFilters = {}) {
 
       return response.data.data;
     },
+    enabled: filters.enabled ?? true,
   });
 }
 

@@ -22,6 +22,8 @@ export interface PointageRealtimeEvent {
   timestamp: string;
 }
 
+export type RealtimeStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error' | 'auth-error';
+
 /** Maintient un flux SSE authentifié et reprend après les déconnexions. */
 export function useRealtimePointages() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -35,8 +37,8 @@ export function useRealtimePointages() {
   }>({ scope: '', events: [] });
   const [connectionState, setConnectionState] = useState<{
     scope: string;
-    connected: boolean;
-  }>({ scope: '', connected: false });
+    status: RealtimeStatus;
+  }>({ scope: '', status: 'idle' });
 
   useEffect(() => {
     const url = `${API_BASE_URL.replace(/\/+$/, '')}/api/realtime/pointages`;
@@ -46,11 +48,14 @@ export function useRealtimePointages() {
     const cleCurseur = `ams-pointages-cursor-${tenantId ?? 'unknown'}`;
     let dernierId = window.sessionStorage.getItem(cleCurseur) ?? '0-0';
     let minuterieActualisation: number | undefined;
+    let tentativesEchouees = 0;
 
     const connecter = async () => {
       while (!controller.signal.aborted) {
         try {
-          console.log('[SSE] Connexion à', url);
+          if (tentativesEchouees > 0 && tentativesEchouees < 5) {
+            setConnectionState({ scope, status: 'reconnecting' });
+          }
           const response = await fetch(url, {
             headers: {
               Accept: 'text/event-stream',
@@ -63,7 +68,7 @@ export function useRealtimePointages() {
 
           if (!response.ok || !response.body) {
             if (response.status === 401) {
-              console.error('[SSE] Erreur:', new Error('Authentification SSE refusée (401).'));
+              setConnectionState({ scope, status: 'auth-error' });
               useAuthStore.getState().clearAuth();
               if (!window.location.pathname.includes('/login')) {
                 router.replace('/login');
@@ -73,7 +78,8 @@ export function useRealtimePointages() {
             throw new Error(`Connexion temps réel refusée (${response.status}).`);
           }
 
-          setConnectionState({ scope, connected: true });
+          tentativesEchouees = 0;
+          setConnectionState({ scope, status: 'connected' });
           const lecteur = response.body.getReader();
           const decodeur = new TextDecoder();
           let tampon = '';
@@ -97,13 +103,11 @@ export function useRealtimePointages() {
                 }
                 if (ligne.startsWith('event:')) typeEvenement = ligne.slice(6).trim();
                 if (ligne.startsWith('data:')) {
-                  console.log('[SSE] Message reçu:', ligne);
                   donnees.push(ligne.slice(5).replace(/^ /, ''));
                 }
               }
               if (donnees.length > 0) {
                 const evenement = JSON.parse(donnees.join('\n')) as PointageRealtimeEvent & { message?: string };
-                console.log('[SSE] Événement:', evenement);
                 if (typeEvenement === 'error') {
                   throw new Error(evenement.message || 'Le serveur a interrompu le flux temps réel.');
                 }
@@ -125,13 +129,18 @@ export function useRealtimePointages() {
             }
           }
           await response.body.cancel().catch(() => undefined);
-        } catch (error) {
+          if (!controller.signal.aborted) {
+            tentativesEchouees++;
+            setConnectionState({ scope, status: tentativesEchouees >= 5 ? 'error' : 'reconnecting' });
+          }
+        } catch {
           if (controller.signal.aborted) return;
-          setConnectionState({ scope, connected: false });
-          console.error('[SSE] Erreur:', error);
+          tentativesEchouees++;
+          setConnectionState({ scope, status: tentativesEchouees >= 5 ? 'error' : 'reconnecting' });
         }
 
-        setConnectionState({ scope, connected: false });
+        if (controller.signal.aborted) return;
+        const delay = Math.min(1500 * (2 ** Math.min(Math.max(0, tentativesEchouees - 1), 5)), 30_000);
         await new Promise<void>((resolve) => {
           const onAbort = () => {
             window.clearTimeout(timeout);
@@ -140,7 +149,7 @@ export function useRealtimePointages() {
           const timeout = window.setTimeout(() => {
             controller.signal.removeEventListener('abort', onAbort);
             resolve();
-          }, 1500);
+          }, delay);
           controller.signal.addEventListener('abort', onAbort, { once: true });
         });
       }
@@ -155,6 +164,8 @@ export function useRealtimePointages() {
 
   return {
     events: eventState.scope === scope ? eventState.events : [],
-    connected: isAuthenticated && connectionState.scope === scope && connectionState.connected,
+    status: connectionState.scope === scope
+      ? isAuthenticated ? connectionState.status : 'idle'
+      : isAuthenticated ? 'connecting' : 'idle',
   };
 }

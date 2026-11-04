@@ -85,6 +85,32 @@ export function useAdminTenants(filters: AdminTenantsFilters, enabled = true) {
   });
 }
 
+export function useAllAdminTenants(enabled = true) {
+  return useQuery({
+    queryKey: [...tenantsKey, 'all'],
+    queryFn: async () => {
+      const tenants: AdminTenant[] = [];
+      let offset = 0;
+      let total = Number.POSITIVE_INFINITY;
+
+      while (offset < total) {
+        const params = new URLSearchParams({ limit: '100', offset: String(offset) });
+        const response = await api.get<ApiResponse<AdminTenantsPage>>(
+          `/api/admin/tenants?${params}`,
+        );
+        const page = response.data.data;
+        tenants.push(...page.items);
+        total = page.pagination.total;
+        offset += page.items.length;
+        if (page.items.length === 0) break;
+      }
+
+      return tenants;
+    },
+    enabled,
+  });
+}
+
 export function useTenant(id: number, enabled = true) {
   return useQuery({
     queryKey: [...tenantsKey, 'detail', id],

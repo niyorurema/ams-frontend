@@ -167,6 +167,9 @@ export default function UtilisateursPage() {
       if (editingUser) {
         const update = { ...payload };
         delete update.password;
+        if (!currentUser?.is_super_admin) {
+          delete update.is_super_admin;
+        }
         await updateUser.mutateAsync({ ...update, id: editingUser.id });
         toast.success(t('updated'));
       } else {

@@ -2,7 +2,7 @@
 
 import { format, parseISO } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
-import { Wifi, WifiOff } from 'lucide-react';
+import { AlertCircle, LoaderCircle, Wifi, WifiOff } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,19 +27,35 @@ const statusTranslationKeys = {
 export function PointagesRealtime() {
   const t = useTranslations('pointages');
   const locale = useLocale();
-  const { events, connected } = useRealtimePointages();
+  const { events, status } = useRealtimePointages();
   const dateLocale = locale === 'fr' ? fr : enGB;
+  const statusIcon = status === 'connected'
+    ? Wifi
+    : status === 'connecting' || status === 'reconnecting'
+      ? LoaderCircle
+      : status === 'error' || status === 'auth-error'
+        ? AlertCircle
+        : WifiOff;
+  const StatusIcon = statusIcon;
+  const statusVariant = status === 'connected'
+    ? 'default'
+    : status === 'error' || status === 'auth-error'
+      ? 'destructive'
+      : 'secondary';
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle>{t('realtimeTitle')}</CardTitle>
-        <Badge variant={connected ? 'default' : 'destructive'} className="gap-1">
-          {connected ? <Wifi aria-hidden="true" className="size-3" /> : <WifiOff aria-hidden="true" className="size-3" />}
-          {connected ? t('realtimeConnected') : t('realtimeDisconnected')}
+        <Badge variant={statusVariant} className="gap-1" aria-live="polite">
+          <StatusIcon aria-hidden="true" className={`size-3 ${status === 'connecting' || status === 'reconnecting' ? 'animate-spin' : ''}`} />
+          {t(`realtimeStatus.${status}`)}
         </Badge>
       </CardHeader>
       <CardContent>
+        {(status === 'error' || status === 'auth-error') && (
+          <p role="status" className="mb-3 text-sm text-destructive">{t('realtimeStatusHelp')}</p>
+        )}
         {events.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('realtimeEmpty')}</p>
         ) : (

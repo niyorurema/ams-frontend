@@ -1,6 +1,7 @@
 export interface Pointage {
   id: number;
   tenant_id: number;
+  tenant_name?: string | null;
   employe_id?: number;
   badge_id: number;
   capteur_id?: number;

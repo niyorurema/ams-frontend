@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,9 @@ export function PointageManuelDialog({
   const queryClient = useQueryClient();
   const [employeId, setEmployeId] = useState('');
   const [capteurId, setCapteurId] = useState('none');
+  const [capteurLookupText, setCapteurLookupText] = useState('');
+  const [capteurLookup, setCapteurLookup] = useState('');
+  const [selectedCapteurOption, setSelectedCapteurOption] = useState<ComboboxOption | undefined>();
   const [datePointage, setDatePointage] = useState(maintenantLocal);
   const [typeEvenement, setTypeEvenement] = useState<TypePointage>('CHECK_IN');
   const [raison, setRaison] = useState('');
@@ -68,17 +71,28 @@ export function PointageManuelDialog({
     },
     enabled: open,
   });
-  const capteursQuery = useCapteurs({ limit: 1000, offset: 0 });
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setCapteurLookup(capteurLookupText.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [capteurLookupText]);
+
+  const capteursQuery = useCapteurs({ search: capteurLookup || undefined, limit: 50, offset: 0 });
   const employeOptions = useMemo(() => (employesQuery.data ?? []).map((employe) => ({
     value: String(employe.id),
     label: `${employe.matricule} — ${employe.nom} ${employe.prenom}`,
     description: employe.unite_nom ?? undefined,
     keywords: `${employe.nom} ${employe.prenom} ${employe.matricule}`,
   })), [employesQuery.data]);
-  const capteurOptions = useMemo(() => (capteursQuery.data?.items ?? []).map((capteur) => ({
-    value: String(capteur.id),
-    label: capteur.nom,
-  })), [capteursQuery.data?.items]);
+  const capteurOptions = useMemo(() => {
+    const options: ComboboxOption[] = (capteursQuery.data?.items ?? []).map((capteur) => ({
+      value: String(capteur.id),
+      label: capteur.nom,
+    }));
+    if (selectedCapteurOption && !options.some((option) => option.value === selectedCapteurOption.value)) {
+      options.unshift(selectedCapteurOption);
+    }
+    return options;
+  }, [capteursQuery.data?.items, selectedCapteurOption]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -99,6 +113,9 @@ export function PointageManuelDialog({
       await queryClient.invalidateQueries({ queryKey: ['pointages'] });
       setEmployeId('');
       setCapteurId('none');
+      setCapteurLookupText('');
+      setCapteurLookup('');
+      setSelectedCapteurOption(undefined);
       setDatePointage(maintenantLocal());
       setTypeEvenement('CHECK_IN');
       setRaison('');
@@ -113,7 +130,7 @@ export function PointageManuelDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!mutation.isPending) onOpenChange(nextOpen); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t('manuelTitre')}</DialogTitle>
@@ -121,28 +138,40 @@ export function PointageManuelDialog({
         </DialogHeader>
         <form onSubmit={soumettre} className="space-y-4">
           <div className="space-y-2">
-            <Label>{t('employe')}</Label>
+            <Label htmlFor="pointage-manuel-employe">{t('employe')}</Label>
             <Combobox
+              id="pointage-manuel-employe"
+              ariaLabel={t('employe')}
               options={employeOptions}
               value={employeId}
               onValueChange={setEmployeId}
               placeholder={employesQuery.isLoading ? t('chargementEmployes') : t('selectionnerEmploye')}
               searchPlaceholder={t('rechercherEmploye')}
               emptyMessage={employesQuery.isError ? t('erreurEmployesVisibles') : t('aucunEmploye')}
-              disabled={employesQuery.isLoading || employesQuery.isError}
+              disabled={mutation.isPending || employesQuery.isLoading || employesQuery.isError}
             />
           </div>
           <div className="space-y-2">
-            <Label>{t('capteur')} ({t('optionnel')})</Label>
+            <Label htmlFor="pointage-manuel-capteur">{t('capteur')} ({t('optionnel')})</Label>
             <Combobox
+              id="pointage-manuel-capteur"
+              ariaLabel={t('capteur')}
               options={[{ value: 'none', label: t('aucunCapteur') }, ...capteurOptions]}
               value={capteurId}
-              onValueChange={setCapteurId}
+              onValueChange={(value) => {
+                setCapteurId(value);
+                setSelectedCapteurOption(value === 'none'
+                  ? undefined
+                  : capteurOptions.find((option) => option.value === value));
+              }}
+              onSearch={setCapteurLookupText}
               placeholder={t('aucunCapteur')}
               searchPlaceholder={t('rechercherCapteur')}
               emptyMessage={t('aucunCapteur')}
               className="w-full"
+              disabled={mutation.isPending || capteursQuery.isLoading || capteursQuery.isError}
             />
+            {capteursQuery.isError && <p role="alert" className="text-sm text-destructive">{t('erreurCapteurs')}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="pointage-manuel-date">{t('dateHeure')}</Label>
@@ -152,12 +181,13 @@ export function PointageManuelDialog({
               value={datePointage}
               onChange={(event) => setDatePointage(event.target.value)}
               required
+              disabled={mutation.isPending}
             />
           </div>
           <div className="space-y-2">
-            <Label>{t('type')}</Label>
+            <Label htmlFor="pointage-manuel-type">{t('type')}</Label>
             <Select value={typeEvenement} onValueChange={(value) => { if (value) setTypeEvenement(value as TypePointage); }}>
-              <SelectTrigger className="w-full"><SelectValue>{t(({ CHECK_IN: 'checkIn', CHECK_OUT: 'checkOut', BREAK_IN: 'breakEnd', BREAK_OUT: 'breakStart' })[typeEvenement])}</SelectValue></SelectTrigger>
+              <SelectTrigger id="pointage-manuel-type" className="w-full" disabled={mutation.isPending}><SelectValue>{t(({ CHECK_IN: 'checkIn', CHECK_OUT: 'checkOut', BREAK_IN: 'breakEnd', BREAK_OUT: 'breakStart' })[typeEvenement])}</SelectValue></SelectTrigger>
               <SelectContent>
                 <SelectItem value="CHECK_IN">{t('checkIn')}</SelectItem>
                 <SelectItem value="BREAK_OUT">{t('breakStart')}</SelectItem>
@@ -174,11 +204,12 @@ export function PointageManuelDialog({
               onChange={(event) => setRaison(event.target.value)}
               maxLength={500}
               placeholder={t('manuelRaisonExemple')}
+              disabled={mutation.isPending}
             />
           </div>
           {employesQuery.isError && <p role="alert" className="text-sm text-destructive">{t('erreurEmployesVisibles')}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('annuler')}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>{t('annuler')}</Button>
             <Button type="submit" disabled={mutation.isPending || !employeId || employesQuery.isError}>
               {mutation.isPending ? t('manuelCreation') : t('manuelCreer')}
             </Button>

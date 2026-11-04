@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   eachDayOfInterval,
   differenceInCalendarDays,
   format,
+  addMonths,
   parseISO,
   startOfMonth,
   subDays,
@@ -13,12 +14,16 @@ import {
 import { enGB, fr } from 'date-fns/locale';
 import {
   AlertCircle,
+  ArrowDown,
+  ArrowDownUp,
+  ArrowUp,
   CalendarDays,
   Download,
   Ellipsis,
   Fingerprint,
   ListFilter,
   Plus,
+  Search,
   Users,
   Waypoints,
 } from 'lucide-react';
@@ -32,7 +37,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -70,12 +75,15 @@ import { PointageManuelDialog } from '@/components/pointages/pointage-manuel-dia
 import { PointagesRealtime } from '@/components/pointages/pointages-realtime';
 import { RecalculerDialog } from '@/components/pointages/recalculer-dialog';
 import { getErrorMessage } from '@/lib/api';
+import { useAllAdminTenants } from '@/hooks/useAdminTenants';
 import { useCapteurs } from '@/hooks/useCapteurs';
 import { useEmployes } from '@/hooks/useEmployes';
 import {
   useExportPointages,
+  useRecalculerPointagesMasse,
   usePointages,
   useStatsPointages,
+  type RecalculMasseResult,
 } from '@/hooks/usePointages';
 import { useAuthStore } from '@/stores/authStore';
 import type { Pointage } from '@/types/pointage';
@@ -110,9 +118,9 @@ function buildChartData(
   const start = parseISO(`${period.debut}T00:00:00`);
   const end = parseISO(`${period.fin}T00:00:00`);
   const counts = new Map(dailyCounts.map((item) => [item.date, item.count]));
-  const days = eachDayOfInterval({ start, end });
 
   if (differenceInCalendarDays(end, start) <= 90) {
+    const days = eachDayOfInterval({ start, end });
     return days.map((day) => {
       const date = format(day, 'yyyy-MM-dd');
       return {
@@ -124,10 +132,15 @@ function buildChartData(
   }
 
   const monthlyCounts = new Map<string, number>();
-  for (const day of days) {
-    const month = format(startOfMonth(day), 'yyyy-MM');
-    const date = format(day, 'yyyy-MM-dd');
-    monthlyCounts.set(month, (monthlyCounts.get(month) ?? 0) + (counts.get(date) ?? 0));
+  for (let month = startOfMonth(start); month <= end; month = addMonths(month, 1)) {
+    monthlyCounts.set(format(month, 'yyyy-MM'), 0);
+  }
+  for (const [date, count] of counts) {
+    if (date < period.debut || date > period.fin) continue;
+    const month = date.slice(0, 7);
+    if (monthlyCounts.has(month)) {
+      monthlyCounts.set(month, (monthlyCounts.get(month) ?? 0) + count);
+    }
   }
 
   return Array.from(monthlyCounts, ([month, count]) => ({
@@ -147,12 +160,13 @@ function formatPointageDate(
   return format(parsed, 'dd/MM/yyyy HH:mm', { locale: locale === 'fr' ? fr : enGB });
 }
 
-/** Consultation, filtrage et export des pointages du tenant courant. */
+/** Consultation, filtrage et export des pointages dans le périmètre autorisé. */
 export default function PointagesPage() {
   const t = useTranslations('pointages');
   const tCommon = useTranslations('common');
   const locale = useLocale();
   const user = useAuthStore((state) => state.user);
+  const isSuperAdmin = user?.is_super_admin === true;
   const localeDate = locale === 'fr' ? fr : enGB;
   const today = new Date();
   const defaultPeriod = {
@@ -161,35 +175,89 @@ export default function PointagesPage() {
   };
 
   const [period, setPeriod] = useState<Period>(defaultPeriod);
+  const [selectedTenant, setSelectedTenant] = useState('all');
+  const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
+  const [employeeLookupText, setEmployeeLookupText] = useState('');
+  const [employeeLookup, setEmployeeLookup] = useState('');
+  const [selectedEmployeeOption, setSelectedEmployeeOption] = useState<ComboboxOption | undefined>();
+  const [sensorLookupText, setSensorLookupText] = useState('');
+  const [sensorLookup, setSensorLookup] = useState('');
+  const [selectedSensorOption, setSelectedSensorOption] = useState<ComboboxOption | undefined>();
   const [employeeId, setEmployeeId] = useState<number | undefined>();
   const [sensorId, setSensorId] = useState<number | undefined>();
   const [eventType, setEventType] = useState<Pointage['type_evenement'] | undefined>();
+  const [status, setStatus] = useState<Pointage['statut'] | undefined>();
+  const [sortBy, setSortBy] = useState<'date_pointage' | 'employe' | 'type_evenement' | 'statut_calcul' | 'capteur' | 'source' | 'statut'>('date_pointage');
+  const [sortDirection, setSortDirection] = useState<'ASC' | 'DESC'>('DESC');
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkResult, setBulkResult] = useState<RecalculMasseResult | null>(null);
   const [detailPointage, setDetailPointage] = useState<Pointage | null>(null);
   const [detailKind, setDetailKind] = useState<'employe' | 'capteur' | null>(null);
   const [pointageRecalcul, setPointageRecalcul] = useState<Pointage | null>(null);
   const [showManuelDialog, setShowManuelDialog] = useState(false);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSearch(searchText.trim());
+      setOffset(0);
+      setSelectedIds([]);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchText]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setEmployeeLookup(employeeLookupText.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [employeeLookupText]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSensorLookup(sensorLookupText.trim()), 250);
+    return () => window.clearTimeout(timeout);
+  }, [sensorLookupText]);
+
   const filters = {
+    tenant_id: isSuperAdmin && selectedTenant !== 'all' ? Number(selectedTenant) : undefined,
     date_debut: period.debut,
     date_fin: period.fin,
+    search: search || undefined,
     employe_id: employeeId,
     capteur_id: sensorId,
     type_evenement: eventType,
+    statut: status,
+    sort_by: sortBy,
+    sort_dir: sortDirection,
     limit,
     offset,
   };
+  const tenantScopeId = isSuperAdmin
+    ? selectedTenant === 'all' ? undefined : Number(selectedTenant)
+    : user?.tenant_id;
+  const tenantsQuery = useAllAdminTenants(isSuperAdmin);
   const pointagesQuery = usePointages(filters);
-  const statsQuery = useStatsPointages(period.debut, period.fin);
-  const capteursQuery = useCapteurs({ limit: 1000, offset: 0 });
-  const employesQuery = useEmployes({ limit: 1000, offset: 0 });
+  const statsQuery = useStatsPointages(period.debut, period.fin, filters.tenant_id);
+  const capteursQuery = useCapteurs({
+    tenant_id: tenantScopeId,
+    search: sensorLookup || undefined,
+    limit: 50,
+    offset: 0,
+    enabled: !isSuperAdmin || tenantScopeId !== undefined,
+  });
+  const employesQuery = useEmployes({
+    tenant_id: tenantScopeId,
+    search: employeeLookup || undefined,
+    limit: 50,
+    offset: 0,
+    enabled: !isSuperAdmin || tenantScopeId !== undefined,
+  });
   const exportMutation = useExportPointages();
+  const bulkRecalculate = useRecalculerPointagesMasse();
 
   const items = pointagesQuery.data?.items ?? [];
   const total = pointagesQuery.data?.pagination.total ?? 0;
-  const selectedOnPage = items.filter((item) => selectedIds.includes(String(item.id))).length;
+  const selectedOnPage = items.filter((item) => selectedIds.includes(item.id)).length;
   const allOnPageSelected = items.length > 0 && selectedOnPage === items.length;
   const peutCreerManuel = user !== null
     && (user.is_super_admin || user.role === 'admin' || user.role === 'rh');
@@ -197,47 +265,103 @@ export default function PointagesPage() {
     ? buildChartData(statsQuery.data.par_jour, period, locale)
     : [];
   const numberFormat = new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB');
-  const employeOptions = useMemo(() => (employesQuery.data?.items ?? []).map((employe) => ({
-    value: String(employe.id),
-    label: `${employe.matricule} — ${employe.nom} ${employe.prenom}`,
-    description: employe.unite_nom ?? undefined,
-    keywords: `${employe.nom} ${employe.prenom} ${employe.matricule}`,
-  })), [employesQuery.data?.items]);
-  const capteurOptions = useMemo(() => (capteursQuery.data?.items ?? []).map((capteur) => ({
-    value: String(capteur.id),
-    label: capteur.nom,
-    description: `${capteur.adresse_ip}:${capteur.port}`,
-  })), [capteursQuery.data?.items]);
+  const employeOptions = useMemo(() => {
+    const options: ComboboxOption[] = (employesQuery.data?.items ?? []).map((employe) => ({
+      value: String(employe.id),
+      label: `${employe.matricule} — ${employe.nom} ${employe.prenom}`,
+      description: employe.unite_nom ?? undefined,
+      keywords: `${employe.nom} ${employe.prenom} ${employe.matricule}`,
+    }));
+    if (selectedEmployeeOption && !options.some((option) => option.value === selectedEmployeeOption.value)) {
+      options.unshift(selectedEmployeeOption);
+    }
+    return options;
+  }, [employesQuery.data?.items, selectedEmployeeOption]);
+  const capteurOptions = useMemo(() => {
+    const options: ComboboxOption[] = (capteursQuery.data?.items ?? []).map((capteur) => ({
+      value: String(capteur.id),
+      label: capteur.nom,
+      description: `${capteur.adresse_ip}:${capteur.port}`,
+    }));
+    if (selectedSensorOption && !options.some((option) => option.value === selectedSensorOption.value)) {
+      options.unshift(selectedSensorOption);
+    }
+    return options;
+  }, [capteursQuery.data?.items, selectedSensorOption]);
+  const activeFilterLabels = [
+    search ? `${t('recherche')}: ${search}` : null,
+    employeeId !== undefined
+      ? `${t('employe')}: ${employeOptions.find((option) => option.value === String(employeeId))?.label ?? employeeId}`
+      : null,
+    sensorId !== undefined
+      ? `${t('capteur')}: ${capteurOptions.find((option) => option.value === String(sensorId))?.label ?? sensorId}`
+      : null,
+    eventType ? `${t('type')}: ${typeLabel(eventType)}` : null,
+    status ? `${t('statut')}: ${t(`statusLabels.${status}`)}` : null,
+  ].filter((label): label is string => label !== null);
 
   const resetFilters = () => {
     setPeriod(defaultPeriod);
+    setSelectedTenant('all');
+    setSearchText('');
+    setSearch('');
     setEmployeeId(undefined);
+    setEmployeeLookupText('');
+    setEmployeeLookup('');
+    setSelectedEmployeeOption(undefined);
     setSensorId(undefined);
+    setSensorLookupText('');
+    setSensorLookup('');
+    setSelectedSensorOption(undefined);
     setEventType(undefined);
+    setStatus(undefined);
     setOffset(0);
     setSelectedIds([]);
   };
 
-  const toggleSelected = (id: number | string, checked: boolean) => {
-    const normalizedId = String(id);
-    setSelectedIds((current) => checked
-      ? current.includes(normalizedId) ? current : [...current, normalizedId]
-      : current.filter((selectedId) => selectedId !== normalizedId));
+  const changerTri = (column: NonNullable<typeof sortBy>) => {
+    if (sortBy === column) {
+      setSortDirection((current) => current === 'ASC' ? 'DESC' : 'ASC');
+    } else {
+      setSortBy(column);
+      setSortDirection(column === 'date_pointage' ? 'DESC' : 'ASC');
+    }
+    setOffset(0);
+    setSelectedIds([]);
   };
 
-  const toggleAll = (checked: boolean) => {
-    setSelectedIds(checked ? items.map((item) => String(item.id)) : []);
+  const togglePointage = (id: number, checked: boolean) => {
+    setSelectedIds((current) => checked
+      ? current.includes(id) ? current : [...current, id]
+      : current.filter((selectedId) => selectedId !== id));
+  };
+
+  const togglePageSelection = (checked: boolean) => {
+    setSelectedIds(checked ? items.slice(0, 100).map((item) => item.id) : []);
+  };
+
+  const recalculerSelection = async () => {
+    try {
+      const result = await bulkRecalculate.mutateAsync(selectedIds);
+      setBulkResult(result);
+      setSelectedIds([]);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   };
 
   const exporter = async (format: 'csv' | 'excel') => {
     try {
       await exportMutation.mutateAsync({
         filters: {
+          tenant_id: filters.tenant_id,
           date_debut: period.debut,
           date_fin: period.fin,
           employe_id: employeeId,
           capteur_id: sensorId,
           type_evenement: eventType,
+          statut: status,
+          search: search || undefined,
         },
         format,
       });
@@ -246,7 +370,9 @@ export default function PointagesPage() {
     }
   };
 
-  const typeLabel = (type: Pointage['type_evenement']) => t(typeTranslationKeys[type]);
+  function typeLabel(type: Pointage['type_evenement']) {
+    return t(typeTranslationKeys[type]);
+  }
   const openDetail = (pointage: Pointage, kind: 'employe' | 'capteur') => {
     setDetailPointage(pointage);
     setDetailKind(kind);
@@ -260,11 +386,46 @@ export default function PointagesPage() {
             <CalendarDays aria-hidden="true" className="size-4" />
             <span>{format(parseISO(`${period.debut}T00:00:00`), 'dd MMM', { locale: localeDate })} – {format(parseISO(`${period.fin}T00:00:00`), 'dd MMM yyyy', { locale: localeDate })}</span>
           </div>
-                    <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t('totalPointages', { count: numberFormat.format(total) })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isSuperAdmin && (
+            <div className="w-full sm:w-56">
+              <FormField label={t('tenant')} htmlFor="pointages-tenant">
+                <Select value={selectedTenant} onValueChange={(value) => {
+                  setSelectedTenant(value ?? 'all');
+                  setEmployeeId(undefined);
+                  setSensorId(undefined);
+                  setSelectedEmployeeOption(undefined);
+                  setSelectedSensorOption(undefined);
+                  setEmployeeLookup('');
+                  setSensorLookup('');
+                  setEmployeeLookupText('');
+                  setSensorLookupText('');
+                  setOffset(0);
+                  setSelectedIds([]);
+                }}>
+                  <SelectTrigger id="pointages-tenant" aria-label={t('tenant')}>
+                    <SelectValue>
+                      {selectedTenant === 'all'
+                        ? t('tousTenants')
+                        : tenantsQuery.data?.find((tenant) => String(tenant.id) === selectedTenant)?.name
+                          ?? t('chargementTenants')}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('tousTenants')}</SelectItem>
+                    {(tenantsQuery.data ?? []).map((tenant) => (
+                      <SelectItem key={tenant.id} value={String(tenant.id)}>{tenant.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {tenantsQuery.isError && <p role="alert" className="text-sm text-destructive">{t('erreurTenants')}</p>}
+              </FormField>
+            </div>
+          )}
           {peutCreerManuel && (
             <Button type="button" variant="outline" onClick={() => setShowManuelDialog(true)}>
               <Plus aria-hidden="true" />
@@ -290,6 +451,7 @@ export default function PointagesPage() {
         <StatCard title={t('stats.employesActifs')} value={statsQuery.data ? numberFormat.format(statsQuery.data.employes_actifs) : '—'} icon={Users} tone="text-amber-700 dark:text-amber-300" loading={statsQuery.isLoading} />
         <StatCard title={t('stats.capteursUtilises')} value={statsQuery.data ? numberFormat.format(statsQuery.data.capteurs_utilises) : '—'} icon={Fingerprint} tone="text-rose-700 dark:text-rose-300" loading={statsQuery.isLoading} />
       </section>
+      <p className="-mt-4 text-sm text-muted-foreground">{t('stats.scopeNote')}</p>
 
       {statsQuery.isLoading ? (
         <Card><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>
@@ -308,59 +470,73 @@ export default function PointagesPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <FormField label={t('dateDebut')}>
-              <Input type="date" value={period.debut} max={period.fin} onChange={(event) => {
+            <FormField label={t('dateDebut')} htmlFor="pointages-date-debut">
+              <Input id="pointages-date-debut" type="date" value={period.debut} max={period.fin} onChange={(event) => {
                 setPeriod((current) => ({ ...current, debut: event.target.value }));
                 setOffset(0);
                 setSelectedIds([]);
               }} />
             </FormField>
-            <FormField label={t('dateFin')}>
-              <Input type="date" value={period.fin} min={period.debut} onChange={(event) => {
+            <FormField label={t('dateFin')} htmlFor="pointages-date-fin">
+              <Input id="pointages-date-fin" type="date" value={period.fin} min={period.debut} onChange={(event) => {
                 setPeriod((current) => ({ ...current, fin: event.target.value }));
                 setOffset(0);
                 setSelectedIds([]);
               }} />
             </FormField>
-            <FormField label={t('employe')}>
+            <FormField label={t('employe')} htmlFor="pointages-employe">
               <Combobox
+                id="pointages-employe"
+                ariaLabel={t('employe')}
                 options={employeOptions}
                 value={employeeId === undefined ? 'all' : String(employeeId)}
                 onValueChange={(value) => {
                   setEmployeeId(value === 'all' ? undefined : Number(value));
+                  setSelectedEmployeeOption(value === 'all'
+                    ? undefined
+                    : employeOptions.find((option) => option.value === value));
                   setOffset(0);
                   setSelectedIds([]);
                 }}
-                placeholder={t('tousEmployes')}
+                onSearch={setEmployeeLookupText}
+                placeholder={isSuperAdmin && tenantScopeId === undefined ? t('choisirTenantPourFiltrer') : t('tousEmployes')}
                 searchPlaceholder={t('rechercherEmploye')}
-                emptyMessage={t('aucunEmploye')}
+                emptyMessage={employesQuery.isError ? t('erreurEmployesVisibles') : t('aucunEmploye')}
                 allowAll
                 allLabel={t('tousEmployes')}
+                disabled={employesQuery.isLoading || employesQuery.isError || isSuperAdmin && tenantScopeId === undefined}
               />
             </FormField>
-            <FormField label={t('capteur')}>
+            <FormField label={t('capteur')} htmlFor="pointages-capteur">
               <Combobox
+                id="pointages-capteur"
+                ariaLabel={t('capteur')}
                 options={capteurOptions}
                 value={sensorId === undefined ? 'all' : String(sensorId)}
                 onValueChange={(value) => {
                   setSensorId(value === 'all' ? undefined : Number(value));
+                  setSelectedSensorOption(value === 'all'
+                    ? undefined
+                    : capteurOptions.find((option) => option.value === value));
                   setOffset(0);
                   setSelectedIds([]);
                 }}
-                placeholder={t('tousCapteurs')}
+                onSearch={setSensorLookupText}
+                placeholder={isSuperAdmin && tenantScopeId === undefined ? t('choisirTenantPourFiltrer') : t('tousCapteurs')}
                 searchPlaceholder={t('rechercherCapteur')}
-                emptyMessage={t('aucunCapteur')}
+                emptyMessage={capteursQuery.isError ? t('erreurChargementCapteurs') : t('aucunCapteur')}
                 allowAll
                 allLabel={t('tousCapteurs')}
+                disabled={capteursQuery.isLoading || capteursQuery.isError || isSuperAdmin && tenantScopeId === undefined}
               />
             </FormField>
-            <FormField label={t('type')}>
+            <FormField label={t('type')} htmlFor="pointages-type">
               <Select value={eventType ?? 'all'} onValueChange={(value) => {
                 setEventType(!value || value === 'all' ? undefined : value as Pointage['type_evenement']);
                 setOffset(0);
                 setSelectedIds([]);
               }}>
-                <SelectTrigger aria-label={t('type')}>
+                <SelectTrigger id="pointages-type" aria-label={t('type')}>
                   <SelectValue>{eventType === undefined ? t('tousTypes') : typeLabel(eventType)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -371,21 +547,69 @@ export default function PointagesPage() {
                 </SelectContent>
               </Select>
             </FormField>
-          </div>
-          <div className="mt-4 flex flex-wrap justify-end gap-2 border-t pt-4">
-            <Button type="button" variant="outline" onClick={resetFilters}>{t('reinitialiser')}</Button>
+            <FormField label={t('statut')} htmlFor="pointages-statut">
+              <Select value={status ?? 'all'} onValueChange={(value) => {
+                setStatus(!value || value === 'all' ? undefined : value as Pointage['statut']);
+                setOffset(0);
+                setSelectedIds([]);
+              }}>
+                <SelectTrigger id="pointages-statut" aria-label={t('statut')}>
+                  <SelectValue>{status ? t(`statusLabels.${status}`) : t('tousStatuts')}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('tousStatuts')}</SelectItem>
+                  {(['VALIDE', 'INVALIDE', 'REJETE', 'SUPPRIME'] as const).map((value) => (
+                    <SelectItem key={value} value={value}>{t(`statusLabels.${value}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label={t('recherche')} htmlFor="pointages-recherche">
+              <div className="relative">
+                <Search aria-hidden="true" className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="pointages-recherche"
+                  type="search"
+                  value={searchText}
+                  onChange={(event) => setSearchText(event.target.value)}
+                  placeholder={t('recherchePlaceholder')}
+                  className="pl-9"
+                  maxLength={100}
+                />
+              </div>
+            </FormField>
+            <div className="flex items-end">
+              <Button type="button" variant="outline" onClick={resetFilters}>{t('reinitialiser')}</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <section aria-label={t('title')} className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-lg font-semibold">{t('resultats')}</h2>
-            <span className="text-sm tabular-nums text-muted-foreground">{numberFormat.format(total)}</span>
+        {activeFilterLabels.length > 0 && (
+          <div aria-live="polite" className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">{t('filtresActifs', { count: numberFormat.format(activeFilterLabels.length) })}</span>
+            {activeFilterLabels.map((label) => <Badge key={label} variant="outline">{label}</Badge>)}
           </div>
-          {selectedIds.length > 0 && <p aria-live="polite" className="text-sm text-muted-foreground">{t('selectionnes', { count: selectedIds.length })}</p>}
-        </div>
+        )}
+        {selectedIds.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-muted/30 p-3">
+            <p aria-live="polite" className="text-sm">{t('selectionnes', { count: numberFormat.format(selectedIds.length) })}</p>
+            <div className="flex items-center gap-2">
+              {selectedIds.length === 100 && <p className="text-sm text-muted-foreground">{t('selectionLimite')}</p>}
+              <Button
+                type="button"
+                onClick={() => void recalculerSelection()}
+                disabled={bulkRecalculate.isPending || selectedIds.length > 100}
+              >
+                {bulkRecalculate.isPending ? t('recalculMasseEnCours') : t('recalculMasse')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setSelectedIds([])} disabled={bulkRecalculate.isPending}>
+                {t('annulerSelection')}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {pointagesQuery.isLoading ? (
           <Card>
@@ -421,18 +645,25 @@ export default function PointagesPage() {
             />
             <Card className="gap-0 py-0">
             <div className="overflow-x-auto">
-              <Table className="sticky-actions min-w-[1120px]">
+              <Table className="sticky-actions min-w-[1240px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox aria-label={t('selectionnerPage')} checked={allOnPageSelected} onCheckedChange={(checked) => toggleAll(checked === true)} />
-                    </TableHead>
-                    <TableHead>{t('dateHeure')}</TableHead>
-                    <TableHead>{t('employe')}</TableHead>
-                    <TableHead>{t('type')}</TableHead>
-                    <TableHead>{t('statutCalcul')}</TableHead>
-                    <TableHead>{t('capteur')}</TableHead>
-                    <TableHead>{t('source')}</TableHead>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          aria-label={t('selectionnerPage')}
+                          checked={allOnPageSelected}
+                          disabled={items.length > 100}
+                          onCheckedChange={(checked) => togglePageSelection(checked === true)}
+                        />
+                      </TableHead>
+                      {isSuperAdmin && selectedTenant === 'all' && <TableHead>{t('tenant')}</TableHead>}
+                      <TableHead aria-sort={sortBy === 'date_pointage' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('dateHeure')} active={sortBy === 'date_pointage'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('date_pointage')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'employe' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('employe')} active={sortBy === 'employe'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('employe')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'type_evenement' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('type')} active={sortBy === 'type_evenement'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('type_evenement')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'statut_calcul' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('statutCalcul')} active={sortBy === 'statut_calcul'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('statut_calcul')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'statut' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('statut')} active={sortBy === 'statut'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('statut')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'capteur' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('capteur')} active={sortBy === 'capteur'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('capteur')} /></TableHead>
+                      <TableHead aria-sort={sortBy === 'source' ? sortDirection === 'ASC' ? 'ascending' : 'descending' : 'none'}><SortButton label={t('source')} active={sortBy === 'source'} direction={sortDirection} directionLabel={t(sortDirection === 'ASC' ? 'triCroissant' : 'triDecroissant')} onClick={() => changerTri('source')} /></TableHead>
                     <TableHead className="w-12 text-right">{tCommon('actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -440,10 +671,18 @@ export default function PointagesPage() {
                   {items.map((pointage) => {
                     const rowId = String(pointage.id);
                     return (
-                      <TableRow key={rowId} data-state={selectedIds.includes(rowId) ? 'selected' : undefined}>
+                      <TableRow key={rowId}>
                         <TableCell>
-                          <Checkbox aria-label={t('selectionnerPointage', { id: rowId })} checked={selectedIds.includes(rowId)} onCheckedChange={(checked) => toggleSelected(rowId, checked === true)} />
+                          <Checkbox
+                            aria-label={t('selectionnerPointage', { id: rowId })}
+                            checked={selectedIds.includes(pointage.id)}
+                            disabled={!selectedIds.includes(pointage.id) && selectedIds.length >= 100}
+                            onCheckedChange={(checked) => togglePointage(pointage.id, checked === true)}
+                          />
                         </TableCell>
+                        {isSuperAdmin && selectedTenant === 'all' && (
+                          <TableCell className="max-w-48 truncate">{pointage.tenant_name || t('tenantInconnu')}</TableCell>
+                        )}
                         <TableCell className="whitespace-nowrap font-medium tabular-nums">{formatPointageDate(pointage.date_pointage, locale, t('realtimeDateInvalide'))}</TableCell>
                         <TableCell className="max-w-56">
                           {pointage.employe_nom || pointage.employe_prenom ? (
@@ -465,6 +704,7 @@ export default function PointagesPage() {
                             {t(calculationStatusTranslationKeys[pointage.statut_calcul])}
                           </Badge>
                         </TableCell>
+                        <TableCell><Badge variant="secondary">{t(`statusLabels.${pointage.statut}`)}</Badge></TableCell>
                         <TableCell className="max-w-48 truncate">{pointage.capteur_nom || t('capteurInconnu')}</TableCell>
                         <TableCell className="text-muted-foreground">{t(`sourceLabels.${pointage.source}`)}</TableCell>
                         <TableCell className="text-right">
@@ -491,11 +731,9 @@ export default function PointagesPage() {
               onLimitChange={(newLimit) => {
                 setLimit(newLimit);
                 setOffset(0);
-                setSelectedIds([]);
               }}
               onOffsetChange={(newOffset) => {
                 setOffset(newOffset);
-                setSelectedIds([]);
               }}
             />
           </div>
@@ -528,6 +766,65 @@ export default function PointagesPage() {
         pointage={pointageRecalcul}
         onOpenChange={(open) => { if (!open) setPointageRecalcul(null); }}
       />
+      <Dialog open={bulkResult !== null} onOpenChange={(open) => { if (!open) setBulkResult(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t('recalculMasseResultat')}</DialogTitle>
+            <DialogDescription>{t('recalculMasseDescription')}</DialogDescription>
+          </DialogHeader>
+          {bulkResult && (
+            <div className="space-y-4">
+              <p role="status" className="text-sm">
+                {t('recalculMasseResume', {
+                  total: numberFormat.format(bulkResult.total),
+                  calcules: numberFormat.format(bulkResult.calcules),
+                  erreurs: numberFormat.format(bulkResult.erreurs.length),
+                })}
+              </p>
+              <div className="max-h-96 overflow-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('pointage')}</TableHead>
+                      {isSuperAdmin && selectedTenant === 'all' && <TableHead>{t('tenant')}</TableHead>}
+                      <TableHead>{t('recalculBefore')}</TableHead>
+                      <TableHead>{t('recalculAfter')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {bulkResult.resultats.map((resultat) => (
+                      <TableRow key={`${resultat.tenant_id}-${resultat.id}`}>
+                        <TableCell>#{resultat.id}</TableCell>
+                        {isSuperAdmin && selectedTenant === 'all' && (
+                          <TableCell>{tenantsQuery.data?.find((tenant) => tenant.id === resultat.tenant_id)?.name ?? resultat.tenant_id}</TableCell>
+                        )}
+                        <TableCell>
+                          {t(typeTranslationKeys[resultat.pointage_avant.type_evenement])}
+                          {' · '}
+                          {t(calculationStatusTranslationKeys[resultat.pointage_avant.statut_calcul])}
+                        </TableCell>
+                        <TableCell>
+                          {t(typeTranslationKeys[resultat.pointage_apres.type_evenement])}
+                          {' · '}
+                          {t(calculationStatusTranslationKeys[resultat.pointage_apres.statut_calcul])}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {bulkResult.erreurs.map((erreur) => (
+                      <TableRow key={`error-${erreur.id}`}>
+                        <TableCell>#{erreur.id}</TableCell>
+                        {isSuperAdmin && selectedTenant === 'all' && <TableCell>—</TableCell>}
+                        <TableCell colSpan={2} className="text-destructive">{t('recalculMasseErreur')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <DialogDescription>{t('recalculMasseNonModifie')}</DialogDescription>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <PointageManuelDialog open={showManuelDialog} onOpenChange={setShowManuelDialog} />
     </div>
   );
@@ -581,11 +878,44 @@ function StatCard({
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0 space-y-2">
-      <Label>{label}</Label>
+      <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>
+  );
+}
+
+function SortButton({
+  label,
+  active,
+  direction,
+  directionLabel,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  direction: 'ASC' | 'DESC';
+  directionLabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      aria-label={active ? `${label}, ${directionLabel}` : label}
+      aria-pressed={active}
+      onClick={onClick}
+      className="-ml-3 h-8 gap-1 px-2 font-medium"
+    >
+      {label}
+      {!active
+        ? <ArrowDownUp aria-hidden="true" className="size-3 text-muted-foreground" />
+        : direction === 'ASC'
+          ? <ArrowUp aria-hidden="true" className="size-3 text-primary" />
+          : <ArrowDown aria-hidden="true" className="size-3 text-primary" />}
+    </Button>
   );
 }

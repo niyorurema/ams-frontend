@@ -5,12 +5,16 @@ import { api } from '@/lib/api';
 import type { Pointage } from '@/types/pointage';
 
 export interface PointagesFilters {
+  tenant_id?: number;
   date_debut?: string;
   date_fin?: string;
+  search?: string;
   employe_id?: number;
   capteur_id?: number;
   type_evenement?: Pointage['type_evenement'];
   statut?: Pointage['statut'];
+  sort_by?: 'date_pointage' | 'employe' | 'type_evenement' | 'statut_calcul' | 'capteur' | 'source' | 'statut';
+  sort_dir?: 'ASC' | 'DESC';
   limit?: number;
   offset?: number;
 }
@@ -34,6 +38,19 @@ export interface PointagesStats {
   par_type: Record<string, number>;
 }
 
+export interface RecalculMasseResult {
+  total: number;
+  calcules: number;
+  erreurs: Array<{ id: number }>;
+  resultats: Array<{
+    id: number;
+    tenant_id: number;
+    pointage_avant: { type_evenement: Pointage['type_evenement']; statut_calcul: Pointage['statut_calcul'] };
+    pointage_apres: { type_evenement: Pointage['type_evenement']; statut_calcul: Pointage['statut_calcul'] };
+    contexte: { date: string; nb_pointages_jour: number; position: number; horaire: string };
+  }>;
+}
+
 export interface PresenceStatsData {
   date: string;
   presents: number;
@@ -55,12 +72,16 @@ export interface PresenceStats {
 
 function creerParametres(filters: PointagesFilters): URLSearchParams {
   const params = new URLSearchParams();
+  if (filters.tenant_id !== undefined) params.set('tenant_id', String(filters.tenant_id));
   if (filters.date_debut) params.set('date_debut', filters.date_debut);
   if (filters.date_fin) params.set('date_fin', filters.date_fin);
+  if (filters.search) params.set('search', filters.search);
   if (filters.employe_id !== undefined) params.set('employe_id', String(filters.employe_id));
   if (filters.capteur_id !== undefined) params.set('capteur_id', String(filters.capteur_id));
   if (filters.type_evenement) params.set('type_evenement', filters.type_evenement);
   if (filters.statut) params.set('statut', filters.statut);
+  if (filters.sort_by) params.set('sort_by', filters.sort_by);
+  if (filters.sort_dir) params.set('sort_dir', filters.sort_dir);
   if (filters.limit !== undefined) params.set('limit', String(filters.limit));
   if (filters.offset !== undefined) params.set('offset', String(filters.offset));
 
@@ -84,11 +105,12 @@ export function usePointages(filters: PointagesFilters = {}) {
 }
 
 /** Récupère les statistiques de pointages sur une période. */
-export function useStatsPointages(dateDebut: string, dateFin: string) {
+export function useStatsPointages(dateDebut: string, dateFin: string, tenantId?: number) {
   return useQuery({
-    queryKey: ['pointages', 'stats', dateDebut, dateFin],
+    queryKey: ['pointages', 'stats', dateDebut, dateFin, tenantId ?? 'all'],
     queryFn: async () => {
       const params = new URLSearchParams({ date_debut: dateDebut, date_fin: dateFin });
+      if (tenantId !== undefined) params.set('tenant_id', String(tenantId));
       const response = await api.get<{ success: boolean; data: PointagesStats }>(
         `/api/pointages/stats?${params.toString()}`
       );
@@ -126,11 +148,14 @@ export function useExportPointages() {
   return useMutation({
     mutationFn: async ({ filters, format = 'csv' }: { filters: PointagesFilters; format?: 'csv' | 'excel' }) => {
       const params = new URLSearchParams();
+      if (filters.tenant_id !== undefined) params.set('tenant_id', String(filters.tenant_id));
       if (filters.date_debut) params.set('date_debut', filters.date_debut);
       if (filters.date_fin) params.set('date_fin', filters.date_fin);
       if (filters.employe_id !== undefined) params.set('employe_id', String(filters.employe_id));
       if (filters.capteur_id !== undefined) params.set('capteur_id', String(filters.capteur_id));
       if (filters.type_evenement) params.set('type_evenement', filters.type_evenement);
+      if (filters.statut) params.set('statut', filters.statut);
+      if (filters.search) params.set('search', filters.search);
       params.set('format', format);
       const response = await api.get<Blob>(`/api/pointages/export?${params.toString()}`, {
         responseType: 'blob',
@@ -147,6 +172,19 @@ export function useExportPointages() {
       link.click();
       link.remove();
       window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    },
+  });
+}
+
+/** Simule le recalcul d'une sélection de pointages, sans écriture en base. */
+export function useRecalculerPointagesMasse() {
+  return useMutation({
+    mutationFn: async (pointageIds: number[]) => {
+      const response = await api.post<{ success: boolean; data: RecalculMasseResult }>(
+        '/api/pointages/recalculer-masse',
+        { pointage_ids: pointageIds },
+      );
+      return response.data.data;
     },
   });
 }
