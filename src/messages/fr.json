@@ -90,9 +90,7 @@
   },
   "monDossier": {
     "title": "Mon dossier",
-    "description": "Consultez les informations de votre compte et de l’employé qui y est associé.",
-    "dashboardDescription": "Votre compte, votre présence du jour et votre historique personnel.",
-    "editProfile": "Modifier mon profil",
+    "editProfile": "Mettre à jour mon profil",
     "accountTitle": "Compte utilisateur",
     "accountDescription": "Informations de connexion et d’accès de votre compte.",
     "fullName": "Nom complet",

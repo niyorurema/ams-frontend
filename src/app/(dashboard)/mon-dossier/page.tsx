@@ -70,7 +70,6 @@ export default function MonDossierPage() {
   const t = useTranslations('monDossier');
   const locale = useLocale();
   const user = useAuthStore((state) => state.user);
-  const isLecteur = user?.role === 'lecteur';
   const [dateSelectionnee, setDateSelectionnee] = useState('');
   const [matriculeSaisi, setMatriculeSaisi] = useState('');
   const [matriculeRecherche, setMatriculeRecherche] = useState('');
@@ -165,22 +164,7 @@ export default function MonDossierPage() {
 
   return (
     <div className="w-full space-y-6">
-      <header className="flex flex-col justify-between gap-4 border-b pb-5 sm:flex-row sm:items-end">
-        <div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-            {isLecteur ? t('dashboardDescription') : t('description')}
-          </p>
-        </div>
-        <Link
-          href="/parametres/profil"
-          className="inline-flex min-h-9 items-center justify-center gap-2 self-start rounded-lg border px-3 text-sm font-medium transition-colors hover:bg-muted sm:self-auto"
-        >
-          {t('editProfile')}
-          <ArrowUpRight aria-hidden="true" className="size-4" />
-        </Link>
-      </header>
-
-      <nav aria-label="Sections du dossier" className="flex flex-wrap gap-2 rounded-lg border bg-muted/30 p-1">
+      <nav aria-label="Sections du dossier" className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-1">
         {([
           ['aujourdhui', 'Aujourd’hui'],
           ['historique', 'Historique'],
@@ -195,6 +179,13 @@ export default function MonDossierPage() {
             className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === value ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >{label}</button>
         ))}
+        <Link
+          href="/parametres/profil"
+          className="ml-auto inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          {t('editProfile')}
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        </Link>
       </nav>
 
       {activeTab !== 'compte' && peutConsulterPresence ? (

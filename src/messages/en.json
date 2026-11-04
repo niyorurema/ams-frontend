@@ -90,9 +90,7 @@
   },
   "monDossier": {
     "title": "My record",
-    "description": "View your account information and the employee record linked to it.",
-    "dashboardDescription": "Your account, daily attendance, and personal history.",
-    "editProfile": "Edit my profile",
+    "editProfile": "Update my profile",
     "accountTitle": "User account",
     "accountDescription": "Sign-in and access information for your account.",
     "fullName": "Full name",

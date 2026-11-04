@@ -90,9 +90,7 @@
   },
   "monDossier": {
     "title": "Dosiye yanje",
-    "description": "Raba amakuru ya konti yawe n’ay’umukozi ayifatanije na yo.",
-    "dashboardDescription": "Konti yawe, ukwitaba akazi uno musi n'ivyahise vyawe.",
-    "editProfile": "Hindura umwirondoro wanje",
+    "editProfile": "Vugurura umwirondoro wanje",
     "accountTitle": "Konti y'ukoresha",
     "accountDescription": "Amakuru yo kwinjira no gukoresha konti yawe.",
     "fullName": "Amazina yose",
