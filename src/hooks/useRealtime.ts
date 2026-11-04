@@ -56,6 +56,7 @@ export function useRealtimePointages() {
               Accept: 'text/event-stream',
               ...(dernierId ? { 'Last-Event-ID': dernierId } : {}),
             },
+            credentials: 'include',
             cache: 'no-store',
             signal: controller.signal,
           });
@@ -157,4 +158,3 @@ export function useRealtimePointages() {
     connected: isAuthenticated && connectionState.scope === scope && connectionState.connected,
   };
 }
-
