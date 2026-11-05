@@ -54,6 +54,7 @@ export interface DashboardKpis {
       adresse_ip: string;
       port: number;
       statut: Capteur['statut'];
+      etat_connexion: NonNullable<Capteur['etat_connexion']>;
     }>;
   };
   heures_sup: {

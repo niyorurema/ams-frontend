@@ -535,14 +535,13 @@ export default function CapteursPage() {
                 <Select
                   value={createForm.statut}
                   onValueChange={(value) => {
-                    if (value === 'ACTIF' || value === 'INACTIF' || value === 'HORS_LIGNE') setCreateForm({ ...createForm, statut: value });
+                    if (value === 'ACTIF' || value === 'INACTIF') setCreateForm({ ...createForm, statut: value });
                   }}
                 >
                   <SelectTrigger id="new-capteur-statut" className="w-full"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ACTIF">{t('actif')}</SelectItem>
                     <SelectItem value="INACTIF">{t('inactif')}</SelectItem>
-                    <SelectItem value="HORS_LIGNE">{t('horsLigne')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -654,7 +653,7 @@ export default function CapteursPage() {
                   <Select
                     value={editForm.statut}
                     onValueChange={(value) => {
-                      if (value === 'ACTIF' || value === 'INACTIF' || value === 'HORS_LIGNE') {
+                      if (value === 'ACTIF' || value === 'INACTIF') {
                         setEditForm({ ...editForm, statut: value });
                       }
                     }}
@@ -665,7 +664,6 @@ export default function CapteursPage() {
                     <SelectContent>
                       <SelectItem value="ACTIF">{t('actif')}</SelectItem>
                       <SelectItem value="INACTIF">{t('inactif')}</SelectItem>
-                      <SelectItem value="HORS_LIGNE">{t('horsLigne')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -724,20 +722,23 @@ function CapteurStatus({
   capteur: Capteur;
   t: ReturnType<typeof useTranslations<'capteurs'>>;
 }) {
-  const isActive = capteur.statut === 'ACTIF';
-  const isOffline = capteur.statut === 'HORS_LIGNE';
-  const Icon = isActive ? Wifi : isOffline ? WifiOff : AlertCircle;
-  const label = isActive
-    ? t('actif')
-    : isOffline
-      ? t('horsLigne')
-      : t('inactif');
+  const status = capteur.statut === 'INACTIF' ? 'INACTIVE' : capteur.etat_connexion ?? 'UNKNOWN';
+  const isOnline = status === 'ONLINE';
+  const isOffline = status === 'OFFLINE';
+  const Icon = isOnline ? Wifi : isOffline ? WifiOff : AlertCircle;
+  const label = status === 'INACTIVE'
+    ? t('inactif')
+    : isOnline
+      ? t('enLigne')
+      : isOffline
+        ? t('horsLigne')
+        : t('inconnu');
 
   return (
     <Badge
       variant="outline"
       className={
-        isActive
+        isOnline
           ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300'
           : isOffline
             ? 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300'

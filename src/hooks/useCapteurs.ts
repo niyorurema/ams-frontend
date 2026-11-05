@@ -65,6 +65,7 @@ export function useCapteurs(filters: CapteursFilters = {}) {
       return response.data.data;
     },
     enabled: filters.enabled ?? true,
+    refetchInterval: 15_000,
   });
 }
 

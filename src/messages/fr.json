@@ -379,7 +379,7 @@
     "welcome": "Bienvenue, {name}",
     "totalEmployes": "Total employés",
     "pointagesAujourdhui": "Pointages aujourd'hui",
-    "capteursActifs": "Capteurs actifs",
+    "capteursActifs": "Capteurs en ligne",
     "tauxPresence": "Taux de présence",
     "noScheduleData": "A configurer",
     "retardsAujourdhui": "Retards aujourd'hui",
@@ -417,8 +417,8 @@
       }
     },
     "inactiveCapteurs": {
-      "title": "Capteurs inactifs",
-      "allActive": "Tous les capteurs sont actifs.",
+      "title": "Capteurs indisponibles",
+      "allActive": "Tous les capteurs actifs sont en ligne.",
       "loadError": "Impossible de charger la liste des capteurs.",
       "test": "Tester la connexion",
       "enable": "Activer le capteur",
@@ -430,9 +430,10 @@
       "restartSuccess": "La commande de redémarrage a été envoyée à {nom}.",
       "restartError": "Impossible de redémarrer {nom}. S'il est hors tension, une intervention physique est nécessaire.",
       "statuses": {
-        "ACTIF": "Actif",
-        "INACTIF": "Désactivé",
-        "HORS_LIGNE": "Hors ligne"
+        "ONLINE": "En ligne",
+        "OFFLINE": "Hors ligne",
+        "UNKNOWN": "Inconnu",
+        "INACTIVE": "Désactivé"
       }
     },
     "shifts": {
@@ -472,7 +473,9 @@
     "derniereSync": "Dernière synchronisation",
     "actif": "Actif",
     "inactif": "Inactif",
+    "enLigne": "En ligne",
     "horsLigne": "Hors ligne",
+    "inconnu": "Inconnu",
     "ajouter": "Ajouter un capteur",
     "modifier": "Modifier le capteur",
     "supprimer": "Supprimer le capteur",

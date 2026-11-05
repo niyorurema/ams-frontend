@@ -379,7 +379,7 @@
     "welcome": "Welcome, {name}",
     "totalEmployes": "Total employees",
     "pointagesAujourdhui": "Today's attendance",
-    "capteursActifs": "Active sensors",
+    "capteursActifs": "Sensors online",
     "tauxPresence": "Attendance rate",
     "noScheduleData": "Not configured",
     "retardsAujourdhui": "Late today",
@@ -417,8 +417,8 @@
       }
     },
     "inactiveCapteurs": {
-      "title": "Inactive sensors",
-      "allActive": "All sensors are active.",
+      "title": "Unavailable sensors",
+      "allActive": "All active sensors are online.",
       "loadError": "Unable to load the sensor list.",
       "test": "Test connection",
       "enable": "Enable sensor",
@@ -430,9 +430,10 @@
       "restartSuccess": "The restart command was sent to {nom}.",
       "restartError": "Unable to restart {nom}. If it is powered off, physical intervention is required.",
       "statuses": {
-        "ACTIF": "Active",
-        "INACTIF": "Disabled",
-        "HORS_LIGNE": "Offline"
+        "ONLINE": "Online",
+        "OFFLINE": "Offline",
+        "UNKNOWN": "Unknown",
+        "INACTIVE": "Disabled"
       }
     },
     "shifts": {
@@ -472,7 +473,9 @@
     "derniereSync": "Last synchronization",
     "actif": "Active",
     "inactif": "Inactive",
+    "enLigne": "Online",
     "horsLigne": "Offline",
+    "inconnu": "Unknown",
     "ajouter": "Add a sensor",
     "modifier": "Edit sensor",
     "supprimer": "Delete sensor",

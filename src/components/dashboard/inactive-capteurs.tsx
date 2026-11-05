@@ -88,7 +88,9 @@ export function InactiveCapteurs({ capteurs, isLoading, isError }: InactiveCapte
                     <span className="truncate font-medium">{capteur.nom}</span>
                   </div>
                   <p className="font-mono text-xs text-muted-foreground">{capteur.adresse_ip}:{capteur.port}</p>
-                  <Badge variant={capteur.statut === 'INACTIF' ? 'outline' : 'destructive'}>{t(`statuses.${capteur.statut}`)}</Badge>
+                  <Badge variant={capteur.statut === 'INACTIF' ? 'outline' : 'destructive'}>
+                    {t(`statuses.${capteur.statut === 'INACTIF' ? 'INACTIVE' : capteur.etat_connexion}`)}
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="outline" size="sm" title={t('test')} aria-label={t('test')} disabled={actionCapteurId !== null} onClick={() => void tester(capteur)}>

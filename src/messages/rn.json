@@ -261,7 +261,7 @@
     "welcome": "Ikaze, {name}",
     "totalEmployes": "Abakozi bose",
     "pointagesAujourdhui": "Amasaha y'akazi y'uyu munsi",
-    "capteursActifs": "Ibikoresho bikora",
+    "capteursActifs": "Ibikoresho biri ku murongo",
     "tauxPresence": "Igipimo c'ukwitaba",
     "noScheduleData": "Ntibiratunganywa",
     "retardsAujourdhui": "Abakererewe uyu munsi",
@@ -299,8 +299,8 @@
       }
     },
     "inactiveCapteurs": {
-      "title": "Ibikoresho bidakora",
-      "allActive": "Ibikoresho vyose birakora.",
+      "title": "Ibikoresho bitaboneka",
+      "allActive": "Ibikoresho vyose bikora biri ku murongo.",
       "loadError": "Ntivyashobotse kuronka urutonde rw'ibikoresho.",
       "test": "Gerageza ihuriro",
       "enable": "Koresha igikoresho",
@@ -312,9 +312,10 @@
       "restartSuccess": "Itegeko ryo gusubira gutanguza {nom} ryarungitswe.",
       "restartError": "Ntivyashobotse gusubira gutanguza {nom}. Niba yazimye, hakenewe umuntu ku kibanza.",
       "statuses": {
-        "ACTIF": "Kirakora",
-        "INACTIF": "Yarahagaritswe",
-        "HORS_LIGNE": "Ntiri ku murongo"
+        "ONLINE": "Kiri ku murongo",
+        "OFFLINE": "Ntikiri ku murongo",
+        "UNKNOWN": "Ntibizwi",
+        "INACTIVE": "Carahagaritswe"
       }
     },
     "shifts": {
@@ -354,7 +355,9 @@
     "derniereSync": "Isanisha rya nyuma",
     "actif": "Gikora",
     "inactif": "Ntigikora",
+    "enLigne": "Kiri ku murongo",
     "horsLigne": "Ntikiri ku murongo",
+    "inconnu": "Ntibizwi",
     "ajouter": "Ongeraho igikoresho",
     "modifier": "Hindura igikoresho",
     "supprimer": "Siba igikoresho",

@@ -5,7 +5,12 @@ export interface Capteur {
   adresse_ip: string;
   port: number;
   type_reseau: 'LAN' | 'NETBIRD';
-  statut: 'ACTIF' | 'INACTIF' | 'HORS_LIGNE';
+  statut: 'ACTIF' | 'INACTIF';
+  etat_connexion?: 'ONLINE' | 'OFFLINE' | 'UNKNOWN' | 'INACTIVE';
+  derniere_communication?: string | null;
+  source_derniere_communication?: 'ADMS' | 'SERVER_POLL' | null;
+  frequence_adms_secondes?: number | null;
+  frequence_polling_secondes?: number | null;
   numero_serie?: string;
   com_key?: string;
   timeout_secondes?: number;
