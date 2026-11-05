@@ -69,20 +69,28 @@ interface AttendanceChartProps {
   isLoading: boolean;
   isError: boolean;
   latestDate?: string;
+  dateDebut: string;
+  dateFin: string;
+  onDateRangeChange: (dateDebut: string, dateFin: string) => void;
 }
 
 /** Graphique des présences avec une plage de dates et plusieurs visualisations. */
-export function AttendanceChart({ days, isLoading, isError, latestDate }: AttendanceChartProps) {
+export function AttendanceChart({
+  days,
+  isLoading,
+  isError,
+  latestDate,
+  dateDebut,
+  dateFin,
+  onDateRangeChange,
+}: AttendanceChartProps) {
   const t = useTranslations('dashboard.attendanceChart');
-  const [dateFinOverride, setDateFinOverride] = useState<string | null>(null);
-  const [dateDebutOverride, setDateDebutOverride] = useState<string | null>(null);
   const latestAvailableDate = latestDate ?? dateString(new Date());
-  const dateFin = dateFinOverride ?? latestAvailableDate;
-  const dateDebut = dateDebutOverride ?? dateString(subDays(parseISO(latestAvailableDate), 29));
   const preferredChartType = usePreferencesStore((state) => state.attendanceChartType);
   const setPreferredChartType = usePreferencesStore((state) => state.setAttendanceChartType);
   const [chartType, setChartType] = useState<ChartType>(preferredChartType);
   const datesValides = Boolean(dateDebut && dateFin && dateDebut <= dateFin);
+  const firstAvailableDate = days[0]?.date;
 
   const chartData = useMemo(
     () =>
@@ -120,8 +128,7 @@ export function AttendanceChart({ days, isLoading, isError, latestDate }: Attend
 
   function definirPeriode(jours: number) {
     const fin = parseISO(latestAvailableDate);
-    setDateFinOverride(dateString(fin));
-    setDateDebutOverride(dateString(subDays(fin, jours - 1)));
+    onDateRangeChange(dateString(subDays(fin, jours - 1)), dateString(fin));
   }
 
   function renderChart() {
@@ -223,11 +230,11 @@ export function AttendanceChart({ days, isLoading, isError, latestDate }: Attend
         <div className="flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap">
           <label className="flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
             {t('from')}
-            <Input className="w-32" type="date" value={dateDebut} max={dateFin} onChange={(event) => setDateDebutOverride(event.target.value)} />
+            <Input className="w-32" type="date" value={dateDebut} min={firstAvailableDate} max={dateFin} onChange={(event) => onDateRangeChange(event.target.value, dateFin)} />
           </label>
           <label className="flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
             {t('to')}
-            <Input className="w-32" type="date" value={dateFin} min={dateDebut} max={latestAvailableDate} onChange={(event) => setDateFinOverride(event.target.value)} />
+            <Input className="w-32" type="date" value={dateFin} min={dateDebut} max={latestAvailableDate} onChange={(event) => onDateRangeChange(dateDebut, event.target.value)} />
           </label>
           <div className="flex shrink-0 items-center gap-1">
             {[

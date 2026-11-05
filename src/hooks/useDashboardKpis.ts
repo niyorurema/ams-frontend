@@ -10,7 +10,15 @@ export interface DashboardEvolutionDay {
   retards: number;
   absents: number;
   en_cours: number;
+  sans_pointage_depart: number;
+  heures_sup: number;
   total: number;
+  unites_absentes: Array<{
+    unite_id: number;
+    unite: string;
+    absents: number;
+    total: number;
+  }>;
 }
 
 export interface DashboardRecentPointage {

@@ -10,9 +10,10 @@ interface TopUnitesProps {
   unites: DashboardKpis['top_unites_absentes'];
   isLoading: boolean;
   isError: boolean;
+  title?: string;
 }
 
-export function TopUnites({ unites, isLoading, isError }: TopUnitesProps) {
+export function TopUnites({ unites, isLoading, isError, title }: TopUnitesProps) {
   const t = useTranslations('dashboard.topUnits');
 
   return (
@@ -20,7 +21,7 @@ export function TopUnites({ unites, isLoading, isError }: TopUnitesProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 aria-hidden="true" className="size-5" />
-          {t('title')}
+          {title ?? t('title')}
         </CardTitle>
       </CardHeader>
       <CardContent>

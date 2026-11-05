@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
 import { Activity, Clock, Fingerprint, Gauge, LogOut, TrendingUp, UserX, Users } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -29,24 +30,65 @@ export default function DashboardPage() {
   const widgets = usePreferencesStore((state) => state.widgets);
   const dashboardKpis = useDashboardKpis();
   const kpis = dashboardKpis.data;
-  const tauxPresence = kpis?.employes.attendus_aujourdhui
-    ? `${Math.min(100, Math.max(0, Math.round(kpis.employes.presents / kpis.employes.attendus_aujourdhui * 100)))}%`
+  const [dateRangeOverride, setDateRangeOverride] = useState<{ start: string; end: string } | null>(null);
+  const latestDate = kpis?.date ?? format(new Date(), 'yyyy-MM-dd');
+  const dateFin = dateRangeOverride?.end ?? latestDate;
+  const dateDebut = dateRangeOverride?.start ?? format(subDays(parseISO(latestDate), 29), 'yyyy-MM-dd');
+  const joursPeriode = useMemo(
+    () => (kpis?.evolution_presence ?? []).filter((day) => day.date >= dateDebut && day.date <= dateFin),
+    [dateDebut, dateFin, kpis?.evolution_presence],
+  );
+  const totauxPeriode = useMemo(
+    () => joursPeriode.reduce(
+      (total, day) => ({
+        presents: total.presents + day.presents,
+        retards: total.retards + day.retards,
+        absents: total.absents + day.absents,
+        enCours: total.enCours + day.en_cours,
+        attendus: total.attendus + day.total,
+        heuresSup: total.heuresSup + day.heures_sup,
+        sansSortie: total.sansSortie + day.sans_pointage_depart,
+      }),
+      { presents: 0, retards: 0, absents: 0, enCours: 0, attendus: 0, heuresSup: 0, sansSortie: 0 },
+    ),
+    [joursPeriode],
+  );
+  const unitesAbsentesPeriode = useMemo(() => {
+    const aggregate = new Map<number, { unite_id: number; unite: string; absents: number; total: number }>();
+    for (const day of joursPeriode) {
+      for (const unit of day.unites_absentes) {
+        const current = aggregate.get(unit.unite_id) ?? { ...unit, absents: 0, total: 0 };
+        current.absents += unit.absents;
+        current.total += unit.total;
+        aggregate.set(unit.unite_id, current);
+      }
+    }
+
+    return [...aggregate.values()]
+      .map((unit) => ({
+        ...unit,
+        taux_absence: unit.total === 0 ? 0 : Math.round(unit.absents / unit.total * 1000) / 10,
+      }))
+      .sort((first, second) =>
+        (second.taux_absence - first.taux_absence) || (second.absents - first.absents)
+      )
+      .slice(0, 3);
+  }, [joursPeriode]);
+  const tauxPresence = totauxPeriode.attendus
+    ? `${Math.round(totauxPeriode.presents / totauxPeriode.attendus * 100)}%`
     : t('noScheduleData');
-  const tauxPonctualite = kpis?.employes.presents
-    ? `${Math.round(
-      Math.max(0, kpis.employes.presents - kpis.employes.en_retard)
-      / kpis.employes.presents * 100
-    )}%`
+  const tauxPonctualite = totauxPeriode.presents
+    ? `${Math.round(Math.max(0, totauxPeriode.presents - totauxPeriode.retards) / totauxPeriode.presents * 100)}%`
     : '—';
   const stats = [
     { id: 'stats-employes', key: 'totalEmployes', value: kpis?.employes.total, icon: Users, color: 'text-primary' },
     { id: 'stats-pointages', key: 'pointagesAujourdhui', value: kpis?.pointages.aujourdhui, icon: Clock, color: 'text-secondary-foreground' },
     { id: 'stats-capteurs', key: 'capteursActifs', value: kpis?.capteurs.actifs, icon: Fingerprint, color: 'text-primary' },
-    { id: 'stats-presence', key: 'tauxPresence', value: tauxPresence, icon: TrendingUp, color: 'text-secondary-foreground' },
-    { id: 'stats-retards', key: 'retardsAujourdhui', value: kpis?.employes.en_retard, icon: Clock, color: 'text-amber-600' },
-    { id: 'stats-heures-sup', key: 'heuresSupMois', value: kpis?.heures_sup.mois_en_cours, icon: TrendingUp, color: 'text-primary', suffix: ' h' },
-    { id: 'stats-absents-attendus', key: 'absentsAttendus', value: kpis?.employes.absents, icon: UserX, color: 'text-destructive' },
-    { id: 'stats-ponctualite', key: 'tauxPonctualite', value: tauxPonctualite, icon: Gauge, color: 'text-emerald-600' },
+    { id: 'stats-presence', key: 'tauxPresencePeriode', value: tauxPresence, icon: TrendingUp, color: 'text-secondary-foreground' },
+    { id: 'stats-retards', key: 'retardsPeriode', value: totauxPeriode.retards, icon: Clock, color: 'text-amber-600' },
+    { id: 'stats-heures-sup', key: 'heuresSupPeriode', value: totauxPeriode.heuresSup, icon: TrendingUp, color: 'text-primary', suffix: ' h' },
+    { id: 'stats-absents-attendus', key: 'absentsPeriode', value: totauxPeriode.absents, icon: UserX, color: 'text-destructive' },
+    { id: 'stats-ponctualite', key: 'tauxPonctualitePeriode', value: tauxPonctualite, icon: Gauge, color: 'text-emerald-600' },
   ] as const;
   const visibleWidgets = [...widgets]
     .filter((widget) => widget.visible)
@@ -54,10 +96,6 @@ export default function DashboardPage() {
   const statsByWidget = new Map<string, (typeof stats)[number]>(
     stats.map((stat) => [stat.id, stat]),
   );
-
-  const variationPresents = kpis?.comparaison_hier
-    ? kpis.employes.presents - kpis.comparaison_hier.presents
-    : null;
 
   return (
     <div className="w-full space-y-6">
@@ -100,11 +138,6 @@ export default function DashboardPage() {
                           : stat.value}
                       </p>
                     )}
-                    {!dashboardKpis.isLoading && !dashboardKpis.isError && stat.id === 'stats-presence' && variationPresents !== null && (
-                      <p className={`mt-1 text-xs ${variationPresents >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                        {variationPresents >= 0 ? '+' : ''}{variationPresents} présence(s) par rapport à hier
-                      </p>
-                    )}
                     {!dashboardKpis.isLoading && !dashboardKpis.isError && stat.id === 'stats-pointages' && kpis && (
                       <p className="mt-1 text-xs text-muted-foreground">
                         {kpis.pointages.entrees} entrées · {kpis.pointages.sorties} sorties
@@ -124,6 +157,9 @@ export default function DashboardPage() {
                   isLoading={dashboardKpis.isLoading}
                   isError={dashboardKpis.isError}
                   latestDate={kpis?.date}
+                  dateDebut={dateDebut}
+                  dateFin={dateFin}
+                  onDateRangeChange={(start, end) => setDateRangeOverride({ start, end })}
                 />
               );
             }
@@ -165,9 +201,10 @@ export default function DashboardPage() {
               return (
                 <TopUnites
                   key={widget.id}
-                  unites={kpis?.top_unites_absentes ?? []}
+                  unites={unitesAbsentesPeriode}
                   isLoading={dashboardKpis.isLoading}
                   isError={dashboardKpis.isError}
+                  title={t('topUnitsPeriod')}
                 />
               );
             }
@@ -211,7 +248,7 @@ export default function DashboardPage() {
                 <Card key={widget.id} data-widget-id={widget.id} className="h-full">
                   <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t('pointagesSansSortie')}
+                      {t('pointagesSansSortiePeriode')}
                     </CardTitle>
                     <LogOut aria-hidden="true" className="size-4 shrink-0 text-amber-600" />
                   </CardHeader>
@@ -222,7 +259,7 @@ export default function DashboardPage() {
                       <p role="alert" className="text-sm text-destructive">{t('loadError')}</p>
                     ) : (
                       <p className="text-2xl font-semibold tabular-nums">
-                        {new Intl.NumberFormat().format(kpis?.employes.sans_pointage_depart ?? 0)}
+                        {new Intl.NumberFormat().format(totauxPeriode.sansSortie)}
                       </p>
                     )}
                   </CardContent>
