@@ -18,6 +18,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Journal d’audit AMS
+
+Les administrateurs et super-administrateurs peuvent consulter les écritures enregistrées dans **Journal d’audit** (`/admin/audit-logs`). La page permet de filtrer par tenant (super-administrateurs), acteur, action, type et identifiant d’objet, capteur, identifiant de requête et période. Les résultats sont paginés et chaque événement affiche les instantanés disponibles avant et après l’écriture. L’accès est également contrôlé par l’API backend.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

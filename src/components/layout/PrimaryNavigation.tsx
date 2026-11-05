@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Clock,
   FileText,
   Fingerprint,
@@ -30,6 +31,7 @@ const navigation = [
   { key: 'pointages', href: '/pointages', icon: Clock },
   { key: 'rapports', href: '/rapports', icon: FileText },
   { key: 'parametres', href: '/parametres', icon: Settings },
+  { key: 'auditLogs', href: '/admin/audit-logs', icon: ClipboardList, adminOnly: true },
   { key: 'adminTenants', href: '/admin/tenants', icon: Building2, superAdminOnly: true },
 ] as const;
 
@@ -76,6 +78,7 @@ export function PrimaryNavigation({
   const items = navigation
     .filter((item) => {
       if (isLecteur && item.key === 'monDossier') return false;
+      if ('adminOnly' in item && item.adminOnly && user?.role !== 'admin' && !user?.is_super_admin) return false;
       if ('superAdminOnly' in item && item.superAdminOnly && !user?.is_super_admin) return false;
       if ('managerOnly' in item && item.managerOnly
         && user?.role !== 'admin' && user?.role !== 'rh' && !user?.is_super_admin) return false;

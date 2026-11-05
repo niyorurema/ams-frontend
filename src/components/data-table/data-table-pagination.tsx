@@ -23,6 +23,7 @@ interface DataTablePaginationProps {
   onLimitChange: (limit: number) => void;
   onOffsetChange: (offset: number) => void;
   limitOptions?: number[];
+  showTotal?: boolean;
 }
 
 /** Pagination commune aux tableaux chargés côté serveur. */
@@ -33,6 +34,7 @@ export function DataTablePagination({
   onLimitChange,
   onOffsetChange,
   limitOptions = [10, 50, 100, 500, 1000],
+  showTotal = true,
 }: DataTablePaginationProps) {
   const t = useTranslations('common');
   const locale = useLocale();
@@ -57,9 +59,11 @@ export function DataTablePagination({
 
   return (
     <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
-        {t('pagination.total', { count: formattedTotal })}
-      </p>
+      {showTotal && (
+        <p className="text-sm text-muted-foreground">
+          {t('pagination.total', { count: formattedTotal })}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
         <div className="flex items-center gap-2">
           <span className="whitespace-nowrap text-sm text-muted-foreground">

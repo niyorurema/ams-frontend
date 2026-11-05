@@ -34,6 +34,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
   const getPageTitle = () => {
+    if (pathname.startsWith('/admin/audit-logs')) return t('auditLogs');
     if (pathname.startsWith('/admin/tenants')) return t('adminTenants');
     if (pathname.startsWith('/parametres/profil')) return t('profil');
     if (pathname.startsWith('/parametres/preferences')) return t('preferences');
