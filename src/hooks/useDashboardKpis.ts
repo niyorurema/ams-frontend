@@ -57,6 +57,14 @@ export interface DashboardKpis {
       etat_connexion: NonNullable<Capteur['etat_connexion']>;
     }>;
   };
+  sante_collecte: {
+    etat: 'OK' | 'ATTENTION' | 'UNKNOWN';
+    capteurs_total: number;
+    capteurs_en_ligne: number;
+    capteurs_hors_ligne: number;
+    capteurs_inconnus: number;
+    pointages_non_associes: number;
+  };
   heures_sup: {
     mois_en_cours: number;
     mois_precedent: number;
@@ -87,7 +95,7 @@ export interface DashboardKpis {
 }
 
 /** Charge les indicateurs et données annexes du tableau de bord en un seul appel. */
-export function useDashboardKpis() {
+export function useDashboardKpis(enabled = true) {
   return useQuery({
     queryKey: ['dashboard', 'kpis'],
     queryFn: async () => {
@@ -98,5 +106,6 @@ export function useDashboardKpis() {
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    enabled,
   });
 }

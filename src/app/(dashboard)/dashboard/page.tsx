@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
-import { Clock, Fingerprint, TrendingUp, Users } from 'lucide-react';
+import { Activity, Clock, Fingerprint, Gauge, LogOut, TrendingUp, UserX, Users } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Card,
@@ -32,6 +32,12 @@ export default function DashboardPage() {
   const tauxPresence = kpis?.employes.attendus_aujourdhui
     ? `${Math.min(100, Math.max(0, Math.round(kpis.employes.presents / kpis.employes.attendus_aujourdhui * 100)))}%`
     : t('noScheduleData');
+  const tauxPonctualite = kpis?.employes.presents
+    ? `${Math.round(
+      Math.max(0, kpis.employes.presents - kpis.employes.en_retard)
+      / kpis.employes.presents * 100
+    )}%`
+    : '—';
   const stats = [
     { id: 'stats-employes', key: 'totalEmployes', value: kpis?.employes.total, icon: Users, color: 'text-primary' },
     { id: 'stats-pointages', key: 'pointagesAujourdhui', value: kpis?.pointages.aujourdhui, icon: Clock, color: 'text-secondary-foreground' },
@@ -39,6 +45,8 @@ export default function DashboardPage() {
     { id: 'stats-presence', key: 'tauxPresence', value: tauxPresence, icon: TrendingUp, color: 'text-secondary-foreground' },
     { id: 'stats-retards', key: 'retardsAujourdhui', value: kpis?.employes.en_retard, icon: Clock, color: 'text-amber-600' },
     { id: 'stats-heures-sup', key: 'heuresSupMois', value: kpis?.heures_sup.mois_en_cours, icon: TrendingUp, color: 'text-primary', suffix: ' h' },
+    { id: 'stats-absents-attendus', key: 'absentsAttendus', value: kpis?.employes.absents, icon: UserX, color: 'text-destructive' },
+    { id: 'stats-ponctualite', key: 'tauxPonctualite', value: tauxPonctualite, icon: Gauge, color: 'text-emerald-600' },
   ] as const;
   const visibleWidgets = [...widgets]
     .filter((widget) => widget.visible)
@@ -53,14 +61,6 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>{t('title')}</span>
-        {kpis?.updated_at && (
-          <time dateTime={kpis.updated_at}>
-            Mise à jour : {format(parseISO(kpis.updated_at), 'HH:mm:ss')}
-          </time>
-        )}
-      </div>
       {visibleWidgets.length > 0 ? (
         <section
           aria-label={t('title')}
@@ -74,8 +74,10 @@ export default function DashboardPage() {
                 ? '/employes'
                 : stat.id === 'stats-capteurs'
                   ? '/capteurs'
-                  : stat.id === 'stats-pointages' || stat.id === 'stats-presence'
+                  : stat.id === 'stats-pointages' || stat.id === 'stats-presence' || stat.id === 'stats-ponctualite'
                     ? '/pointages'
+                    : stat.id === 'stats-absents-attendus'
+                      ? '/employes'
                     : '/parametres/pointages';
               return (
                 <Link key={widget.id} href={href} className="block rounded-xl transition-transform hover:-translate-y-0.5">
@@ -167,6 +169,64 @@ export default function DashboardPage() {
                   isLoading={dashboardKpis.isLoading}
                   isError={dashboardKpis.isError}
                 />
+              );
+            }
+
+            if (widget.id === 'stats-sante-collecte') {
+              const health = kpis?.sante_collecte;
+              return (
+                <Card key={widget.id} data-widget-id={widget.id} className="h-full">
+                  <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {t('santeCollecte')}
+                    </CardTitle>
+                    <Activity aria-hidden="true" className={`size-4 shrink-0 ${health?.etat === 'OK' ? 'text-emerald-600' : health?.etat === 'ATTENTION' ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    {dashboardKpis.isLoading ? (
+                      <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                    ) : dashboardKpis.isError ? (
+                      <p role="alert" className="text-sm text-destructive">{t('loadError')}</p>
+                    ) : (
+                      <>
+                        <p className="text-2xl font-semibold">{t(`collectionHealth.${health?.etat ?? 'UNKNOWN'}`)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('collectionHealthDetails', {
+                            online: health?.capteurs_en_ligne ?? 0,
+                            offline: health?.capteurs_hors_ligne ?? 0,
+                            unknown: health?.capteurs_inconnus ?? 0,
+                            total: health?.capteurs_total ?? 0,
+                            orphaned: health?.pointages_non_associes ?? 0,
+                          })}
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            if (widget.id === 'stats-pointages-sans-sortie') {
+              return (
+                <Card key={widget.id} data-widget-id={widget.id} className="h-full">
+                  <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {t('pointagesSansSortie')}
+                    </CardTitle>
+                    <LogOut aria-hidden="true" className="size-4 shrink-0 text-amber-600" />
+                  </CardHeader>
+                  <CardContent>
+                    {dashboardKpis.isLoading ? (
+                      <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                    ) : dashboardKpis.isError ? (
+                      <p role="alert" className="text-sm text-destructive">{t('loadError')}</p>
+                    ) : (
+                      <p className="text-2xl font-semibold tabular-nums">
+                        {new Intl.NumberFormat().format(kpis?.employes.sans_pointage_depart ?? 0)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
               );
             }
 

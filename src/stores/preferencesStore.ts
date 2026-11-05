@@ -71,12 +71,16 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: 'stats-presence', visible: true, order: 3 },
   { id: 'stats-retards', visible: true, order: 4 },
   { id: 'stats-heures-sup', visible: true, order: 5 },
-  { id: 'chart-evolution', visible: true, order: 6 },
-  { id: 'derniers-pointages', visible: true, order: 7 },
-  { id: 'capteurs-inactifs', visible: true, order: 8 },
-  { id: 'shifts-jour', visible: true, order: 9 },
-  { id: 'alertes-jour', visible: true, order: 10 },
-  { id: 'top-unites-absentes', visible: true, order: 11 },
+  { id: 'stats-absents-attendus', visible: true, order: 6 },
+  { id: 'stats-ponctualite', visible: true, order: 7 },
+  { id: 'chart-evolution', visible: true, order: 8 },
+  { id: 'derniers-pointages', visible: true, order: 9 },
+  { id: 'capteurs-inactifs', visible: true, order: 10 },
+  { id: 'shifts-jour', visible: true, order: 11 },
+  { id: 'alertes-jour', visible: true, order: 12 },
+  { id: 'top-unites-absentes', visible: true, order: 13 },
+  { id: 'stats-sante-collecte', visible: true, order: 14 },
+  { id: 'stats-pointages-sans-sortie', visible: true, order: 15 },
 ];
 
 /** Store Zustand persistant pour les préférences utilisateur. */
@@ -142,6 +146,23 @@ export const usePreferencesStore = create<PreferencesState>()(
         const persisted = persistedState as Partial<PreferencesState> | undefined;
         const widgets = Array.isArray(persisted?.widgets) ? persisted.widgets : [];
         const existingIds = new Set(widgets.map((widget) => widget.id));
+        const mergedWidgets = [...widgets].sort((first, second) => first.order - second.order);
+        const insertAfter: Record<string, string> = {
+          'stats-absents-attendus': 'stats-heures-sup',
+          'stats-ponctualite': 'stats-absents-attendus',
+          'stats-sante-collecte': 'top-unites-absentes',
+          'stats-pointages-sans-sortie': 'stats-sante-collecte',
+        };
+
+        for (const widget of DEFAULT_WIDGETS) {
+          if (existingIds.has(widget.id)) continue;
+          const anchorId = insertAfter[widget.id];
+          const anchorIndex = anchorId
+            ? mergedWidgets.findIndex((existingWidget) => existingWidget.id === anchorId)
+            : -1;
+          mergedWidgets.splice(anchorIndex >= 0 ? anchorIndex + 1 : mergedWidgets.length, 0, widget);
+          existingIds.add(widget.id);
+        }
 
         return {
           ...currentState,
@@ -168,10 +189,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             && Number.isFinite(persisted.sidebarWidth)
             ? Math.min(420, Math.max(200, Math.round(persisted.sidebarWidth)))
             : currentState.sidebarWidth,
-          widgets: [
-            ...widgets,
-            ...DEFAULT_WIDGETS.filter((widget) => !existingIds.has(widget.id)),
-          ],
+          widgets: mergedWidgets.map((widget, order) => ({ ...widget, order })),
         };
       },
     }

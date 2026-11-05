@@ -85,12 +85,16 @@ const widgetIds = [
   'stats-presence',
   'stats-retards',
   'stats-heures-sup',
+  'stats-absents-attendus',
+  'stats-ponctualite',
   'chart-evolution',
   'derniers-pointages',
   'capteurs-inactifs',
   'shifts-jour',
   'alertes-jour',
   'top-unites-absentes',
+  'stats-sante-collecte',
+  'stats-pointages-sans-sortie',
 ] as const;
 
 const widgetTranslationKeys: Record<(typeof widgetIds)[number], string> = {
@@ -100,12 +104,16 @@ const widgetTranslationKeys: Record<(typeof widgetIds)[number], string> = {
   'stats-presence': 'statsPresence',
   'stats-retards': 'statsRetards',
   'stats-heures-sup': 'statsHeuresSup',
+  'stats-absents-attendus': 'statsExpectedAbsences',
+  'stats-ponctualite': 'statsPunctuality',
   'chart-evolution': 'chartEvolution',
   'derniers-pointages': 'derniersPointages',
   'capteurs-inactifs': 'inactiveCapteurs',
   'shifts-jour': 'shifts',
   'alertes-jour': 'dailyAlerts',
   'top-unites-absentes': 'topAbsentUnits',
+  'stats-sante-collecte': 'statsCollectionHealth',
+  'stats-pointages-sans-sortie': 'statsMissingCheckOut',
 };
 
 function isLocale(value: string): value is Locale {

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { format, parseISO } from 'date-fns';
+import { enGB, fr } from 'date-fns/locale';
 import { ArrowLeft, Menu } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -14,6 +16,7 @@ import { useTenantStore } from '@/stores/tenantStore';
 import { useAuthStore } from '@/stores/authStore';
 import { LocaleSwitcher } from './LocaleSwitcher';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { useDashboardKpis } from '@/hooks/useDashboardKpis';
 
 interface HeaderProps {
   onMobileMenuToggle: () => void;
@@ -23,8 +26,12 @@ interface HeaderProps {
 /** En-tête fixe avec retour, navigation optionnelle et préférences d'affichage. */
 export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
   const t = useTranslations('nav');
+  const tDashboard = useTranslations('dashboard');
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const isDashboardPage = pathname.startsWith('/dashboard');
+  const dashboardKpis = useDashboardKpis(isDashboardPage);
   const user = useAuthStore((state) => state.user);
   const homePath = user?.role === 'lecteur' ? '/mon-dossier' : '/dashboard';
   const tenant = useTenantStore((state) => state.tenant);
@@ -130,7 +137,17 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
       </div>
 
       <div className={`pointer-events-none hidden min-w-0 justify-self-center self-center text-center md:block md:max-w-[min(32vw,420px)] ${navigationPosition === 'top' ? 'md:-translate-x-36' : ''}`}>
-        <h1 className="truncate text-base font-semibold" title={pageTitle}>{pageTitle}</h1>
+        <div className="flex min-w-0 items-center justify-center gap-2">
+          <h1 className="truncate text-base font-semibold" title={pageTitle}>{pageTitle}</h1>
+          {isDashboardPage && dashboardKpis.data?.updated_at && (
+            <time
+              dateTime={dashboardKpis.data.updated_at}
+              className="shrink-0 text-xs font-normal text-muted-foreground"
+            >
+              {tDashboard('updatedAt', { time: format(parseISO(dashboardKpis.data.updated_at), 'HH:mm:ss', { locale: locale === 'fr' ? fr : enGB }) })}
+            </time>
+          )}
+        </div>
       </div>
 
       <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2">
