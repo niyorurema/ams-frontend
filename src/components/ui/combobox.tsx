@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface ComboboxProps {
   className?: string;
   allowAll?: boolean;
   allLabel?: string;
+  clearable?: boolean;
 }
 
 function normaliserRecherche(value: string): string {
@@ -49,7 +51,9 @@ export function Combobox({
   className,
   allowAll = false,
   allLabel = 'Tous',
+  clearable = true,
 }: ComboboxProps) {
+  const tc = useTranslations('common');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const optionsAvecTous = useMemo(
@@ -82,23 +86,44 @@ export function Combobox({
         }
       }}
     >
-      <PopoverTrigger
-        render={
+      <div className="relative w-full">
+        <PopoverTrigger
+          render={
+            <Button
+              type="button"
+              id={id}
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              aria-label={ariaLabel}
+              title={selection?.label}
+              disabled={disabled}
+              className={cn('w-full justify-between', selection && clearable && 'pr-12', className)}
+            >
+              <span className="truncate">{selection?.label ?? placeholder}</span>
+              <ChevronsUpDown aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+            </Button>
+          }
+        />
+        {selection && clearable && !disabled && (
           <Button
             type="button"
-            id={id}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-label={ariaLabel}
-            disabled={disabled}
-            className={cn('w-full justify-between', className)}
+            variant="ghost"
+            size="icon"
+            aria-label={tc('clearSelection')}
+            title={tc('clearSelection')}
+            className="absolute right-8 top-1/2 size-6 -translate-y-1/2"
+            onClick={() => {
+              onValueChange('');
+              setSearch('');
+              onSearch?.('');
+              setOpen(false);
+            }}
           >
-            <span className="truncate">{selection?.label ?? placeholder}</span>
-            <ChevronsUpDown aria-hidden="true" className="size-4 shrink-0 opacity-50" />
+            <X aria-hidden="true" className="size-3.5" />
           </Button>
-        }
-      />
+        )}
+      </div>
       <PopoverContent align="start" className="w-(--anchor-width) min-w-56 p-2">
         <Input
           autoFocus

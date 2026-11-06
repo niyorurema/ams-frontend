@@ -6,6 +6,7 @@ import {
   useState,
   type FormEvent,
 } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import {
@@ -130,11 +131,15 @@ const emptyEmployeeForm: EmployeeForm = {
 export default function EmployesPage() {
   const t = useTranslations('employes');
   const tCommon = useTranslations('common');
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
+  const requestedStatus = searchParams.get('statut');
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [unitFilter, setUnitFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(
+    requestedStatus === 'active' || requestedStatus === 'inactive' ? requestedStatus : 'all'
+  );
   const [createdFrom, setCreatedFrom] = useState('');
   const [createdTo, setCreatedTo] = useState('');
   const [syncFrom, setSyncFrom] = useState('');

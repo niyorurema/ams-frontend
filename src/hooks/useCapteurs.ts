@@ -22,6 +22,7 @@ export interface CapteursFilters {
   limit?: number;
   offset?: number;
   statut?: Capteur['statut'] | Capteur['statut'][];
+  etat_connexion?: NonNullable<Capteur['etat_connexion']>;
   enabled?: boolean;
 }
 
@@ -57,6 +58,7 @@ export function useCapteurs(filters: CapteursFilters = {}) {
       if (filters.statut) {
         params.set('statut', Array.isArray(filters.statut) ? filters.statut.join(',') : filters.statut);
       }
+      if (filters.etat_connexion) params.set('etat_connexion', filters.etat_connexion);
       const response = await api.get<{
         success: boolean;
         data: CapteursResponse;

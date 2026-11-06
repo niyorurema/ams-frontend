@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getErrorMessage } from '@/lib/api';
 import { useCreateDefaultHoraire, useHoraires, useSetDefaultHoraire, useUpdateHoraire, type HorairePlage, type HoraireTenant } from '@/hooks/useHoraires';
@@ -211,9 +212,9 @@ export default function PointagesSettingsPage() {
             <div className="flex flex-wrap items-end gap-3 rounded-lg border border-dashed p-4">
               <label className="grid gap-1.5 text-sm">
                 {t('template')}
-                <select className="h-9 rounded-lg border bg-background px-2" value={typeInitial} onChange={(event) => setTypeInitial(event.target.value as typeof typeInitial)}>
+                <NativeSelect className="h-9 rounded-lg border bg-background px-2" value={typeInitial} onChange={(event) => setTypeInitial(event.target.value as typeof typeInitial)}>
                   {(['OBR', 'STANDARD', 'FLEXIBLE'] as const).map((type) => <option key={type} value={type}>{t(`templates.${type}`)}</option>)}
-                </select>
+                </NativeSelect>
               </label>
               <Button type="button" onClick={() => void creerHoraire()} disabled={createDefault.isPending}>
                 <Plus aria-hidden="true" />
@@ -289,9 +290,9 @@ export default function PointagesSettingsPage() {
                       <div key={`${index}-${plage.type}`} className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-[minmax(180px,1fr)_minmax(130px,0.7fr)_minmax(130px,0.7fr)_minmax(130px,0.7fr)_auto]">
                         <label className="grid gap-1.5 text-sm">
                           {t('punchType')}
-                          <select disabled={readOnly} className="h-9 rounded-lg border bg-background px-2" value={plage.type} onChange={(event) => modifierPlage(index, 'type', event.target.value as HorairePlage['type'])}>
+                          <NativeSelect disabled={readOnly} className="h-9 rounded-lg border bg-background px-2" value={plage.type} onChange={(event) => modifierPlage(index, 'type', event.target.value as HorairePlage['type'])}>
                             {TYPES_POINTAGE.map((type) => <option key={type} value={type}>{t(`punchTypes.${type}`)}</option>)}
-                          </select>
+                          </NativeSelect>
                         </label>
                         <label className="grid gap-1.5 text-sm">{t('expectedTime')}<Input disabled={readOnly} required type="time" value={plage.debut} onChange={(event) => modifierPlage(index, 'debut', event.target.value)} /></label>
                         <label className="grid gap-1.5 text-sm">{t('windowEnd')}<Input disabled={readOnly} required type="time" value={plage.fin} onChange={(event) => modifierPlage(index, 'fin', event.target.value)} /></label>

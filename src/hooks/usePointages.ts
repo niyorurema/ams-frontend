@@ -12,6 +12,7 @@ export interface PointagesFilters {
   employe_id?: number;
   capteur_id?: number;
   type_evenement?: Pointage['type_evenement'];
+  statut_calcul?: Pointage['statut_calcul'];
   statut?: Pointage['statut'];
   sort_by?: 'date_pointage' | 'employe' | 'type_evenement' | 'statut_calcul' | 'capteur' | 'source' | 'statut';
   sort_dir?: 'ASC' | 'DESC';
@@ -79,6 +80,7 @@ function creerParametres(filters: PointagesFilters): URLSearchParams {
   if (filters.employe_id !== undefined) params.set('employe_id', String(filters.employe_id));
   if (filters.capteur_id !== undefined) params.set('capteur_id', String(filters.capteur_id));
   if (filters.type_evenement) params.set('type_evenement', filters.type_evenement);
+  if (filters.statut_calcul) params.set('statut_calcul', filters.statut_calcul);
   if (filters.statut) params.set('statut', filters.statut);
   if (filters.sort_by) params.set('sort_by', filters.sort_by);
   if (filters.sort_dir) params.set('sort_dir', filters.sort_dir);
@@ -154,6 +156,7 @@ export function useExportPointages() {
       if (filters.employe_id !== undefined) params.set('employe_id', String(filters.employe_id));
       if (filters.capteur_id !== undefined) params.set('capteur_id', String(filters.capteur_id));
       if (filters.type_evenement) params.set('type_evenement', filters.type_evenement);
+      if (filters.statut_calcul) params.set('statut_calcul', filters.statut_calcul);
       if (filters.statut) params.set('statut', filters.statut);
       if (filters.search) params.set('search', filters.search);
       params.set('format', format);

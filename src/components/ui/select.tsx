@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
+import { useEffect, useRef } from "react"
 import { cn } from "cn"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
@@ -35,8 +36,35 @@ function SelectTrigger({
 }: SelectPrimitive.Trigger.Props & {
   size?: "sm" | "default"
 }) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+
+    const updateTitle = () => {
+      const value = trigger.querySelector<HTMLElement>('[data-slot="select-value"]')
+      const label = value?.textContent?.trim()
+      if (label && !value?.hasAttribute("data-placeholder")) {
+        if (trigger.title !== label) trigger.title = label
+      } else {
+        if (trigger.hasAttribute("title")) trigger.removeAttribute("title")
+      }
+    }
+
+    const observer = new MutationObserver(updateTitle)
+    observer.observe(trigger, { childList: true, characterData: true, subtree: true })
+    const value = trigger.querySelector<HTMLElement>('[data-slot="select-value"]')
+    if (value) {
+      observer.observe(value, { attributes: true, attributeFilter: ["data-placeholder"] })
+    }
+    updateTitle()
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <SelectPrimitive.Trigger
+      ref={triggerRef}
       data-slot="select-trigger"
       data-size={size}
       className={cn(

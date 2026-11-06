@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -78,9 +79,17 @@ export default function CapteursPage() {
   const t = useTranslations('capteurs');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const connectionState = searchParams.get('etat_connexion');
+  const etatConnexion = connectionState === 'ONLINE'
+    || connectionState === 'OFFLINE'
+    || connectionState === 'UNKNOWN'
+    || connectionState === 'INACTIVE'
+    ? connectionState
+    : undefined;
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
-  const { data, error, isFetching, isLoading, refetch } = useCapteurs({ limit, offset });
+  const { data, error, isFetching, isLoading, refetch } = useCapteurs({ limit, offset, etat_connexion: etatConnexion });
   const syncMutation = useSyncCapteur();
   const createMutation = useCreateCapteur();
   const updateMutation = useUpdateCapteur();

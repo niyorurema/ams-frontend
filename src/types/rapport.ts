@@ -1,11 +1,18 @@
 export interface RapportStats {
   total_employes: number;
+  jours_employes?: number;
+  employes_planifies?: number;
   presents: number;
   absents: number;
   normaux: number;
   retards: number;
   anormaux: number;
   feries: number;
+  conges?: number;
+  empechements?: number;
+  absences_autorisees?: number;
+  absences_partielles?: number;
+  conflits_absence_pointage?: number;
   repos: number;
   sans_jugement?: number;
   heures_totales: number;
@@ -14,6 +21,7 @@ export interface RapportStats {
 }
 
 export interface RapportDetail {
+  date?: string;
   matricule: string;
   nom: string;
   prenom: string;
@@ -26,7 +34,16 @@ export interface RapportDetail {
   depart_anticipe: string | null;
   retard_minutes: number;
   depart_anticipe_minutes: number;
-  statut: 'NORMAL' | 'ANORMAL' | 'RETARD' | 'EN_COURS' | 'ABSENT' | 'FERIE' | 'REPOS' | 'SANS_JUGEMENT';
+  statut: 'NORMAL' | 'ANORMAL' | 'RETARD' | 'EN_COURS' | 'ABSENT' | 'FERIE' | 'CONGE' | 'EMPECHEMENT' | 'REPOS' | 'SANS_JUGEMENT';
+  absences_autorisees?: Array<{
+    source: 'AMS' | 'OBR';
+    categorie: string;
+    journee_complete: boolean;
+    duree_heures: number | null;
+    heure_debut: string | null;
+    heure_fin: string | null;
+  }>;
+  conflit_absence_pointage?: boolean;
   nb_pointages: number;
   horaire_nom?: string | null;
   source_calcul?: string | null;
@@ -49,6 +66,11 @@ export interface RapportQuotidien {
     unite: string | null;
   };
   date: string;
+  periode?: {
+    type: 'HEBDOMADAIRE' | 'MENSUEL' | 'PERIODE';
+    debut: string;
+    fin: string;
+  };
   horaire: string;
   est_jour_travaille: boolean;
   raison_non_travaille: 'FERIE' | 'WEEKEND' | null;

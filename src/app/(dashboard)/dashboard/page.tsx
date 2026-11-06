@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { format, parseISO, subDays } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
-import { Activity, Clock, Fingerprint, Gauge, LogOut, TrendingUp, UserX, Users } from 'lucide-react';
+import { Activity, CalendarDays, Clock, Fingerprint, Gauge, LogOut, TrendingUp, UserX, Users } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import {
@@ -96,6 +96,35 @@ export default function DashboardPage() {
   const statsByWidget = new Map<string, (typeof stats)[number]>(
     stats.map((stat) => [stat.id, stat]),
   );
+  const pointagesPeriode = new URLSearchParams({
+    date_debut: dateDebut,
+    date_fin: dateFin,
+  }).toString();
+  const pointagesAujourdHui = new URLSearchParams({
+    date_debut: latestDate,
+    date_fin: latestDate,
+  }).toString();
+
+  const getStatHref = (id: (typeof stats)[number]['id']) => {
+    switch (id) {
+      case 'stats-employes':
+        return '/employes?statut=active';
+      case 'stats-pointages':
+        return `/pointages?${pointagesAujourdHui}`;
+      case 'stats-capteurs':
+        return '/capteurs?etat_connexion=ONLINE';
+      case 'stats-presence':
+        return `/pointages?${pointagesPeriode}&type_evenement=CHECK_IN`;
+      case 'stats-retards':
+        return `/pointages?${pointagesPeriode}&type_evenement=CHECK_IN&statut_calcul=RETARD`;
+      case 'stats-heures-sup':
+        return `/pointages?${pointagesPeriode}`;
+      case 'stats-absents-attendus':
+        return `/rapports?date=${latestDate}&statut=ABSENT`;
+      case 'stats-ponctualite':
+        return `/pointages?${pointagesPeriode}&type_evenement=CHECK_IN&statut_calcul=VALIDE`;
+    }
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -108,15 +137,7 @@ export default function DashboardPage() {
             const stat = statsByWidget.get(widget.id);
             if (stat) {
               const Icon = stat.icon;
-              const href = stat.id === 'stats-employes' || stat.id === 'stats-retards'
-                ? '/employes'
-                : stat.id === 'stats-capteurs'
-                  ? '/capteurs'
-                  : stat.id === 'stats-pointages' || stat.id === 'stats-presence' || stat.id === 'stats-ponctualite'
-                    ? '/pointages'
-                    : stat.id === 'stats-absents-attendus'
-                      ? '/employes'
-                    : '/parametres/pointages';
+              const href = getStatHref(stat.id);
               return (
                 <Link key={widget.id} href={href} className="block rounded-xl transition-transform hover:-translate-y-0.5">
                 <Card data-widget-id={widget.id} className="h-full cursor-pointer transition-shadow hover:shadow-md">
@@ -331,6 +352,24 @@ export default function DashboardPage() {
           {tPreferences('noWidgets')}
         </p>
       )}
+      <Link
+        href={`/absences?date_debut=${latestDate}&date_fin=${latestDate}`}
+        className="block rounded-xl"
+      >
+        <Card className="transition-shadow hover:shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t('absencesToday')}
+            </CardTitle>
+            <CalendarDays aria-hidden="true" className="size-4 text-primary" />
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm sm:grid-cols-3">
+            <p>{t('confirmedLeavesToday')}: <strong>{kpis?.absences.conges_confirmes ?? 0}</strong></p>
+            <p>{t('approvedImpedimentsToday')}: <strong>{kpis?.absences.empechements_confirmes ?? 0}</strong></p>
+            <p>{t('pendingImpedimentsToday')}: <strong>{kpis?.absences.empechements_en_attente ?? 0}</strong></p>
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }

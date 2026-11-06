@@ -159,8 +159,8 @@ export function PointageManuelDialog({
               options={[{ value: 'none', label: t('aucunCapteur') }, ...capteurOptions]}
               value={capteurId}
               onValueChange={(value) => {
-                setCapteurId(value);
-                setSelectedCapteurOption(value === 'none'
+                setCapteurId(value || 'none');
+                setSelectedCapteurOption(!value || value === 'none'
                   ? undefined
                   : capteurOptions.find((option) => option.value === value));
               }}

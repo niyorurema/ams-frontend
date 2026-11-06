@@ -169,6 +169,10 @@ export default function OrganisationPage() {
 
   const saveUnit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!unitForm.type) {
+      toast.error(tc('requiredSelection'));
+      return;
+    }
     try {
       if (editingUnit) {
         await updateUnit.mutateAsync({ id: editingUnit.id, data: unitForm });
@@ -218,6 +222,10 @@ export default function OrganisationPage() {
 
   const saveMandate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!mandateForm.type_mandat) {
+      toast.error(tc('requiredSelection'));
+      return;
+    }
     try {
       if (editingMandate) {
         await updateMandate.mutateAsync({ id: editingMandate.id, data: mandateForm });
@@ -727,13 +735,13 @@ export default function OrganisationPage() {
               <FormField label={t('nom')}><Input required maxLength={150} value={unitForm.nom} onChange={(event) => setUnitForm({ ...unitForm, nom: event.target.value })} /></FormField>
               <FormField label={t('code')}><Input required maxLength={50} value={unitForm.code} onChange={(event) => setUnitForm({ ...unitForm, code: event.target.value })} /></FormField>
               <FormField label={t('type')}><Combobox options={unitTypeOptions} value={unitForm.type} onValueChange={(value) => setUnitForm({ ...unitForm, type: value as UniteType })} placeholder={t('choisirTypeUnite')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
-              <FormField label={t('parent')}><Combobox options={parentOptions} value={unitForm.parent_id ? String(unitForm.parent_id) : 'none'} onValueChange={(value) => setUnitForm({ ...unitForm, parent_id: value === 'none' ? null : Number(value) })} placeholder={t('choisirParent')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
+              <FormField label={t('parent')}><Combobox options={parentOptions} value={unitForm.parent_id ? String(unitForm.parent_id) : 'none'} onValueChange={(value) => setUnitForm({ ...unitForm, parent_id: !value || value === 'none' ? null : Number(value) })} placeholder={t('choisirParent')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
               <FormField label={t('adresse')}><Input value={unitForm.adresse ?? ''} onChange={(event) => setUnitForm({ ...unitForm, adresse: event.target.value || null })} /></FormField>
               <FormField label={t('telephone')}><Input value={unitForm.telephone ?? ''} onChange={(event) => setUnitForm({ ...unitForm, telephone: event.target.value || null })} /></FormField>
               <FormField label={t('email')}><Input type="email" value={unitForm.email ?? ''} onChange={(event) => setUnitForm({ ...unitForm, email: event.target.value || null })} /></FormField>
-              <FormField label={t('responsable')}><Combobox options={managerOptions} value={unitForm.responsable_id ? String(unitForm.responsable_id) : 'none'} onValueChange={(value) => setUnitForm({ ...unitForm, responsable_id: value === 'none' ? null : Number(value) })} placeholder={t('choisirResponsable')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
+              <FormField label={t('responsable')}><Combobox options={managerOptions} value={unitForm.responsable_id ? String(unitForm.responsable_id) : 'none'} onValueChange={(value) => setUnitForm({ ...unitForm, responsable_id: !value || value === 'none' ? null : Number(value) })} placeholder={t('choisirResponsable')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
               <FormField label={t('ordre')}><Input type="number" min={0} value={unitForm.ordre_affichage} onChange={(event) => setUnitForm({ ...unitForm, ordre_affichage: Number(event.target.value) || 0 })} /></FormField>
-              <FormField label={t('statut')}><Combobox options={statusOptions} value={active(unitForm.actif) ? 'active' : 'inactive'} onValueChange={(value) => setUnitForm({ ...unitForm, actif: value === 'active' })} placeholder={t('statut')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
+              <FormField label={t('statut')}><Combobox options={statusOptions} value={active(unitForm.actif) ? 'active' : 'inactive'} onValueChange={(value) => setUnitForm({ ...unitForm, actif: value === 'active' })} placeholder={t('statut')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} clearable={false} /></FormField>
             </div>
             <DialogFooter><Button type="button" variant="outline" onClick={() => setUnitDialogOpen(false)}>{tc('cancel')}</Button><Button type="submit" disabled={busy}>{busy && <Loader2 className="size-4 animate-spin" />}{tc('save')}</Button></DialogFooter>
           </form>
@@ -748,7 +756,7 @@ export default function OrganisationPage() {
               <FormField label={t('service')}><Combobox options={unitOptions} value={mandateForm.unite_id ? String(mandateForm.unite_id) : undefined} onValueChange={(value) => setMandateForm({ ...mandateForm, unite_id: Number(value) })} placeholder={t('choisirService')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
               <FormField label={t('titulaire')}><Combobox options={userOptions} value={mandateForm.user_id ? String(mandateForm.user_id) : undefined} onValueChange={(value) => setMandateForm({ ...mandateForm, user_id: Number(value) })} placeholder={t('choisirTitulaire')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
               <FormField label={t('typeMandat')}><Combobox options={mandateTypeOptions} value={mandateForm.type_mandat} onValueChange={(value) => setMandateForm({ ...mandateForm, type_mandat: value as MandatInput['type_mandat'] })} placeholder={t('typeMandat')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
-              <FormField label={t('statut')}><Combobox options={statusOptions} value={active(mandateForm.est_actif) ? 'active' : 'inactive'} onValueChange={(value) => setMandateForm({ ...mandateForm, est_actif: value === 'active' })} placeholder={t('statut')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} /></FormField>
+              <FormField label={t('statut')}><Combobox options={statusOptions} value={active(mandateForm.est_actif) ? 'active' : 'inactive'} onValueChange={(value) => setMandateForm({ ...mandateForm, est_actif: value === 'active' })} placeholder={t('statut')} searchPlaceholder={t('rechercher')} emptyMessage={t('aucunResultat')} clearable={false} /></FormField>
               <FormField label={t('dateDebut')}><Input required type="date" value={mandateForm.date_debut} onChange={(event) => setMandateForm({ ...mandateForm, date_debut: event.target.value })} /></FormField>
               <FormField label={t('dateFin')}><Input type="date" min={mandateForm.date_debut} value={mandateForm.date_fin ?? ''} onChange={(event) => setMandateForm({ ...mandateForm, date_fin: event.target.value || null })} /></FormField>
               <FormField label={t('remarque')}><Input value={mandateForm.remarque ?? ''} onChange={(event) => setMandateForm({ ...mandateForm, remarque: event.target.value || null })} /></FormField>

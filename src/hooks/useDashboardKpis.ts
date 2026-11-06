@@ -77,6 +77,11 @@ export interface DashboardKpis {
     mois_en_cours: number;
     mois_precedent: number;
   };
+  absences: {
+    conges_confirmes: number;
+    empechements_confirmes: number;
+    empechements_en_attente: number;
+  };
   alertes: Array<{
     type: 'SANS_DEPART' | 'ORPHELINS' | 'CONTRATS_HORAIRES_ABSENTS';
     count: number;

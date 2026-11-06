@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   Building2,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -25,11 +26,12 @@ import { useAuthStore } from '@/stores/authStore';
 const navigation = [
   { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
   { key: 'monDossier', href: '/mon-dossier', icon: UserRound },
-  { key: 'capteurs', href: '/capteurs', icon: Fingerprint },
+  { key: 'capteurs', href: '/capteurs', icon: Fingerprint, adminOrRhOnly: true },
   { key: 'employes', href: '/employes', icon: Users },
   { key: 'organisation', href: '/organisation', icon: Network, managerOnly: true },
   { key: 'pointages', href: '/pointages', icon: Clock },
   { key: 'rapports', href: '/rapports', icon: FileText },
+  { key: 'absences', href: '/absences', icon: CalendarDays },
   { key: 'parametres', href: '/parametres', icon: Settings },
   { key: 'auditLogs', href: '/admin/audit-logs', icon: ClipboardList, adminOnly: true },
   { key: 'adminTenants', href: '/admin/tenants', icon: Building2, superAdminOnly: true },
@@ -78,7 +80,10 @@ export function PrimaryNavigation({
   const items = navigation
     .filter((item) => {
       if (isLecteur && item.key === 'monDossier') return false;
+      if (isLecteur && item.key === 'absences') return false;
       if ('adminOnly' in item && item.adminOnly && user?.role !== 'admin' && !user?.is_super_admin) return false;
+      if ('adminOrRhOnly' in item && item.adminOrRhOnly
+        && user?.role !== 'admin' && user?.role !== 'rh' && !user?.is_super_admin) return false;
       if ('superAdminOnly' in item && item.superAdminOnly && !user?.is_super_admin) return false;
       if ('managerOnly' in item && item.managerOnly
         && user?.role !== 'admin' && user?.role !== 'rh' && !user?.is_super_admin) return false;

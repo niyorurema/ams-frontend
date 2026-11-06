@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Label } from '@/components/ui/label';
 import {
   Table,
@@ -244,12 +245,12 @@ export default function AuditLogsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="audit-action">{t('action')}</Label>
-                <select id="audit-action" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.action} onChange={(event) => setForm({ ...form, action: event.target.value })}>
+                <NativeSelect id="audit-action" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={form.action} onChange={(event) => setForm({ ...form, action: event.target.value })}>
                   <option value="">{t('allActions')}</option>
                   <option value="INSERT">{t('actions.INSERT')}</option>
                   <option value="UPDATE">{t('actions.UPDATE')}</option>
                   <option value="DELETE">{t('actions.DELETE')}</option>
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="audit-object-type">{t('objectType')}</Label>

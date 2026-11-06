@@ -50,16 +50,25 @@ function Statistiques({ rapport }: { rapport: RapportQuotidien }) {
   const t = useTranslations('rapports');
   const stats = [
     ['stats.totalEmployes', rapport.stats.total_employes],
+    ...(rapport.periode
+      ? [['stats.joursEmployes', rapport.stats.jours_employes ?? 0] as const]
+      : []),
     ['stats.presents', rapport.stats.presents],
     ['stats.absents', rapport.stats.absents],
     ['stats.normaux', rapport.stats.normaux],
     ['stats.retards', rapport.stats.retards],
     ['stats.anormaux', rapport.stats.anormaux],
     ['stats.feries', rapport.stats.feries],
+    ['stats.conges', rapport.stats.conges ?? 0],
+    ['stats.empechements', rapport.stats.empechements ?? 0],
+    ['stats.conflitsAbsencePointage', rapport.stats.conflits_absence_pointage ?? 0],
     ['stats.repos', rapport.stats.repos],
     ['stats.sansJugement', rapport.stats.sans_jugement ?? 0],
     ['stats.heuresTotales', `${rapport.stats.heures_totales} ${t('heures')}`],
-    ['stats.moyenneHeures', `${rapport.stats.moyenne_heures} ${t('heures')}`],
+    [
+      rapport.periode ? 'stats.moyenneHeuresPeriode' : 'stats.moyenneHeures',
+      `${rapport.stats.moyenne_heures} ${t('heures')}`,
+    ],
   ] as const;
 
   return (
@@ -101,7 +110,12 @@ export function RapportDetail({ rapport }: { rapport: RapportQuotidien }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <p><span className="font-medium">{t('date')}:</span> {rapport.date}</p>
+        <p>
+          <span className="font-medium">{rapport.periode ? t('periode') : t('date')}:</span>{' '}
+          {rapport.periode
+            ? `${rapport.periode.debut} — ${rapport.periode.fin}`
+            : rapport.date}
+        </p>
         <p><span className="font-medium">{t('employes')}:</span> {nombre(rapport.stats.total_employes, locale)}</p>
         <p>
           <span className="font-medium">{t('stats.tauxPresence')}:</span>{' '}
@@ -113,15 +127,19 @@ export function RapportDetail({ rapport }: { rapport: RapportQuotidien }) {
 
       <section className="space-y-3">
         <h3 className="font-semibold">
-          {t('apercu')} — {nombre(rapport.details.length, locale)} {t('employes')}
+          {t('apercu')} — {nombre(rapport.details.length, locale)}{' '}
+          {rapport.periode ? t('stats.joursEmployes').toLowerCase() : t('employes')}
         </h3>
         {rapport.details.length === 0 ? (
           <p className="rounded-lg border py-10 text-center text-muted-foreground">{t('aucunDetail')}</p>
         ) : (
           <div className="max-h-[55vh] overflow-auto rounded-lg border">
-            <Table className="min-w-[1500px] text-xs sm:text-sm">
+            <Table className={`${rapport.periode ? 'min-w-[1580px]' : 'min-w-[1500px]'} text-xs sm:text-sm`}>
               <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
+                  {rapport.periode && (
+                    <TableHead className="whitespace-normal break-words">{t('date')}</TableHead>
+                  )}
                   <TableHead className="whitespace-normal break-words">{t('table.matricule')}</TableHead>
                   <TableHead className="whitespace-normal break-words">{t('table.nomComplet')}</TableHead>
                   <TableHead className="whitespace-normal break-words">{t('table.unite')}</TableHead>
@@ -137,7 +155,10 @@ export function RapportDetail({ rapport }: { rapport: RapportQuotidien }) {
               </TableHeader>
               <TableBody>
                 {rapport.details.map((detail, index) => (
-                  <TableRow key={`${detail.matricule}-${index}`}>
+                  <TableRow key={`${detail.matricule}-${detail.date ?? rapport.date}-${index}`}>
+                    {rapport.periode && (
+                      <TableCell className="whitespace-nowrap">{detail.date ?? rapport.date}</TableCell>
+                    )}
                     <TableCell className="break-words">{detail.matricule}</TableCell>
                     <TableCell className="break-words">{`${detail.prenom} ${detail.nom}`.trim()}</TableCell>
                     <TableCell className="break-words">{detail.unite || '—'}</TableCell>
@@ -166,6 +187,14 @@ export function RapportDetail({ rapport }: { rapport: RapportQuotidien }) {
                       <Badge variant="outline" className="whitespace-normal">
                         {t(`statuts.${detail.statut.toLowerCase()}`)}
                       </Badge>
+                      {detail.conflit_absence_pointage && (
+                        <span className="mt-1 block text-xs text-destructive">{t('conflitAbsencePointage')}</span>
+                      )}
+                      {detail.absences_autorisees?.map((absence, absenceIndex) => (
+                        <span key={`${absence.source}-${absenceIndex}`} className="mt-1 block text-xs text-muted-foreground">
+                          {t(`sources.${absence.source}`)} · {absence.categorie}
+                        </span>
+                      ))}
                     </TableCell>
                   </TableRow>
                 ))}

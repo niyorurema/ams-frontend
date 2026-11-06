@@ -58,6 +58,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
     if (pathname.startsWith('/capteurs')) return t('capteurs');
     if (pathname.startsWith('/employes')) return t('employes');
     if (pathname.startsWith('/organisation')) return t('organisation');
+    if (pathname.startsWith('/absences')) return t('absences');
     if (pathname.startsWith('/pointages')) return t('pointages');
     if (pathname.startsWith('/rapports')) return t('rapports');
     return tenant?.name || 'AMS';

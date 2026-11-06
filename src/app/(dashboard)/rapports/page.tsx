@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { format, subDays } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
@@ -111,6 +112,10 @@ const statutColors: Record<RapportQuotidien['details'][number]['statut'], string
     'border-red-200 bg-red-100 text-red-800 dark:border-muted dark:bg-muted dark:text-muted-foreground',
   ABSENT:
     'border-gray-200 bg-gray-100 text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300',
+  CONGE:
+    'border-teal-200 bg-teal-100 text-teal-800 dark:border-teal-900 dark:bg-teal-950 dark:text-teal-300',
+  EMPECHEMENT:
+    'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-300',
   SANS_JUGEMENT:
     'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300',
   FERIE:
@@ -152,6 +157,7 @@ export default function RapportsPage() {
   const t = useTranslations('rapports');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const canManageReports = Boolean(user?.is_super_admin || user?.role === 'admin' || user?.role === 'rh');
   const canPreviewScheduledReports = Boolean(
@@ -159,8 +165,21 @@ export default function RapportsPage() {
     || ['superviseur', 'chef_service', 'directeur', 'commissaire'].includes(user?.role ?? '')
   );
   const [activeTab, setActiveTab] = useState('quotidien');
-  const [selectedDate, setSelectedDate] = useState(() => format(subDays(new Date(), 1), 'yyyy-MM-dd'));
-  const [reportDate, setReportDate] = useState('');
+  const requestedDate = searchParams.get('date');
+  const requestedStatus = searchParams.get('statut');
+  const [selectedDate, setSelectedDate] = useState(() =>
+    requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+      ? requestedDate
+      : format(subDays(new Date(), 1), 'yyyy-MM-dd')
+  );
+  const [reportDate, setReportDate] = useState(() =>
+    requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : ''
+  );
+  const [detailStatusFilter] = useState<RapportQuotidien['details'][number]['statut'] | undefined>(() =>
+    requestedStatus && ['NORMAL', 'ANORMAL', 'RETARD', 'EN_COURS', 'ABSENT', 'FERIE', 'REPOS', 'SANS_JUGEMENT'].includes(requestedStatus)
+      ? requestedStatus as RapportQuotidien['details'][number]['statut']
+      : undefined
+  );
   const [detailsLimit, setDetailsLimit] = useState(10);
   const [detailsOffset, setDetailsOffset] = useState(0);
   const [planifiesLimit, setPlanifiesLimit] = useState(10);
@@ -187,11 +206,15 @@ export default function RapportsPage() {
 
   const rapport = rapportQuery.data;
   const planifies = planifiesQuery.data?.items ?? [];
-  const totalDetails = rapport?.details.length ?? 0;
-  const detailsPage = rapport?.details.slice(detailsOffset, detailsOffset + detailsLimit) ?? [];
+  const filteredDetails = rapport?.details.filter((detail) =>
+    detailStatusFilter === undefined || detail.statut === detailStatusFilter
+  ) ?? [];
+  const totalDetails = filteredDetails.length;
+  const detailsPage = filteredDetails.slice(detailsOffset, detailsOffset + detailsLimit);
   const planifiesPage = planifies.slice(planifiesOffset, planifiesOffset + planifiesLimit);
   const unites = unitsQuery.data ?? [];
   const formPending = creerMutation.isPending || modifierMutation.isPending;
+
   const stats = useMemo(
     () =>
       rapport
@@ -474,7 +497,10 @@ export default function RapportsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>{t('apercu')} — {rapport.stats.total_employes.toLocaleString(locale)} {t('employes')}</CardTitle>
+                    <CardTitle>
+                      {t('apercu')} — {totalDetails.toLocaleString(locale)} {t('employes')}
+                      {detailStatusFilter ? ` · ${t(`statuts.${detailStatusFilter.toLowerCase()}`)}` : ''}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {detailsPage.length === 0 ? (
@@ -679,11 +705,16 @@ export default function RapportsPage() {
                 <Label htmlFor="planifie-heure">{t('heure')}</Label>
                 <Input id="planifie-heure" type="time" required value={form.heure_envoi} onChange={(event) => setForm({ ...form, heure_envoi: event.target.value })} />
               </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="planifie-jours">{t('joursSemaine')}</Label>
-                <Input id="planifie-jours" value={form.jours_semaine ?? ''} onChange={(event) => setForm({ ...form, jours_semaine: event.target.value })} />
-                <p className="text-xs text-muted-foreground">{t('joursAide')}</p>
-              </div>
+              {form.type === 'HEBDOMADAIRE' && (
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="planifie-jours">{t('joursSemaine')}</Label>
+                  <Input id="planifie-jours" value={form.jours_semaine ?? ''} onChange={(event) => setForm({ ...form, jours_semaine: event.target.value })} />
+                  <p className="text-xs text-muted-foreground">{t('joursAide')}</p>
+                </div>
+              )}
+              {form.type === 'MENSUEL' && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">{t('mensuelAide')}</p>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="planifie-format">{t('format')}</Label>
                 <Select value={form.format} onValueChange={(value) => value && setForm({ ...form, format: value as RapportFormat })}>

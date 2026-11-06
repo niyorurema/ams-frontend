@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { getErrorMessage } from '@/lib/api';
@@ -308,7 +309,7 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1.5 text-sm">
             {t('profileSchedule')}
-            <select
+            <NativeSelect
               className="h-9 rounded-lg border bg-background px-2"
               value={profilHoraireId ?? ''}
               disabled={!canManageSettings || updateSettings.isPending}
@@ -323,7 +324,7 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
                   {horaire.nom}{horaire.est_defaut ? ` · ${t('defaultSchedule')}` : ''}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <span className="text-xs text-muted-foreground">{t('profileScopeHelp')}</span>
           </label>
           <label className="grid gap-1.5 text-sm">
@@ -384,7 +385,7 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
 
           <label className="grid gap-1.5 text-sm">
             {t('parameters.mode_calcul_heures_sup.label')}
-            <select
+            <NativeSelect
               className="h-9 rounded-lg border bg-background px-2"
               value={parametres.mode_calcul_heures_sup}
               disabled={!canManageSettings}
@@ -397,7 +398,7 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
             >
               <option value="ARRONDI">{t('modesOvertime.ARRONDI')}</option>
               <option value="EXACT">{t('modesOvertime.EXACT')}</option>
-            </select>
+            </NativeSelect>
             <span className="text-xs text-muted-foreground">{t('parameters.mode_calcul_heures_sup.description')}</span>
           </label>
 
@@ -465,14 +466,14 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <label className="grid gap-1.5 text-sm">
                   {t('slotMode')}
-                  <select
+                  <NativeSelect
                     className="h-9 rounded-lg border bg-background px-2"
                     value={creneau.mode}
                     disabled={!canManageSettings}
                     onChange={(event) => modifierCreneau(index, 'mode', event.target.value as AttendanceSlotMode)}
                   >
                     {MODES_CRENEAU.map((mode) => <option key={mode} value={mode}>{t(`modes.${mode}`)}</option>)}
-                  </select>
+                  </NativeSelect>
                 </label>
                 {creneau.mode === 'PLAGE' ? (
                   <>
@@ -500,13 +501,13 @@ export function AttendanceRuleSettings({ canManageSettings, canManageOptIn }: At
             <div className="flex flex-wrap items-end gap-3">
               <label className="grid gap-1.5 text-sm">
                 {t('slotType')}
-                <select
+                <NativeSelect
                   className="h-9 rounded-lg border bg-background px-2"
                   value={typeAAjouterEffectif}
                   onChange={(event) => setTypeAAjouter(event.target.value as AttendanceSlotType)}
                 >
                   {creneauxDisponibles.map((type) => <option key={type} value={type}>{t(`slotTypes.${type}`)}</option>)}
-                </select>
+                </NativeSelect>
               </label>
               <Button
                 type="button"

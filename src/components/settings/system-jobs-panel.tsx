@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { useQueueSystemJobRetry, useSystemJobs, type SystemJobRun } from '@/hooks/useSystemJobs';
 import { getErrorMessage } from '@/lib/api';
 
@@ -87,7 +88,7 @@ export function SystemJobsPanel() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
-              <select
+              <NativeSelect
                 aria-label={t('filterJobStatus')}
                 className="h-10 rounded-md border bg-background px-3 text-sm"
                 value={statusFilter}
@@ -97,7 +98,7 @@ export function SystemJobsPanel() {
                 {['RUNNING', 'SUCCESS', 'PARTIAL', 'ERROR', 'STALE'].map((status) => (
                   <option key={status} value={status}>{t(`jobStatuses.${status}`)}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             {jobs.map((job) => (
               <article key={job.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">

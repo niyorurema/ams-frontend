@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   eachDayOfInterval,
@@ -165,6 +166,7 @@ export default function PointagesPage() {
   const t = useTranslations('pointages');
   const tCommon = useTranslations('common');
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const isSuperAdmin = user?.is_super_admin === true;
   const localeDate = locale === 'fr' ? fr : enGB;
@@ -173,8 +175,21 @@ export default function PointagesPage() {
     debut: format(subDays(today, 29), 'yyyy-MM-dd'),
     fin: format(today, 'yyyy-MM-dd'),
   };
+  const requestedStart = searchParams.get('date_debut');
+  const requestedEnd = searchParams.get('date_fin');
+  const validRequestedRange = requestedStart !== null
+    && requestedEnd !== null
+    && /^\d{4}-\d{2}-\d{2}$/.test(requestedStart)
+    && /^\d{4}-\d{2}-\d{2}$/.test(requestedEnd)
+    && requestedStart <= requestedEnd;
+  const requestedEventType = searchParams.get('type_evenement');
+  const requestedCalculatedStatus = searchParams.get('statut_calcul');
 
-  const [period, setPeriod] = useState<Period>(defaultPeriod);
+  const [period, setPeriod] = useState<Period>(
+    validRequestedRange
+      ? { debut: requestedStart, fin: requestedEnd }
+      : defaultPeriod
+  );
   const [selectedTenant, setSelectedTenant] = useState('all');
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
@@ -186,7 +201,16 @@ export default function PointagesPage() {
   const [selectedSensorOption, setSelectedSensorOption] = useState<ComboboxOption | undefined>();
   const [employeeId, setEmployeeId] = useState<number | undefined>();
   const [sensorId, setSensorId] = useState<number | undefined>();
-  const [eventType, setEventType] = useState<Pointage['type_evenement'] | undefined>();
+  const [eventType, setEventType] = useState<Pointage['type_evenement'] | undefined>(
+    requestedEventType && eventTypes.includes(requestedEventType as Pointage['type_evenement'])
+      ? requestedEventType as Pointage['type_evenement']
+      : undefined
+  );
+  const [calculatedStatus, setCalculatedStatus] = useState<Pointage['statut_calcul'] | undefined>(
+    requestedCalculatedStatus && ['VALIDE', 'RETARD', 'ANORMAL', 'UNKNOWN'].includes(requestedCalculatedStatus)
+      ? requestedCalculatedStatus as Pointage['statut_calcul']
+      : undefined
+  );
   const [status, setStatus] = useState<Pointage['statut'] | undefined>();
   const [sortBy, setSortBy] = useState<'date_pointage' | 'employe' | 'type_evenement' | 'statut_calcul' | 'capteur' | 'source' | 'statut'>('date_pointage');
   const [sortDirection, setSortDirection] = useState<'ASC' | 'DESC'>('DESC');
@@ -226,6 +250,7 @@ export default function PointagesPage() {
     employe_id: employeeId,
     capteur_id: sensorId,
     type_evenement: eventType,
+    statut_calcul: calculatedStatus,
     statut: status,
     sort_by: sortBy,
     sort_dir: sortDirection,
@@ -297,6 +322,7 @@ export default function PointagesPage() {
       ? `${t('capteur')}: ${capteurOptions.find((option) => option.value === String(sensorId))?.label ?? sensorId}`
       : null,
     eventType ? `${t('type')}: ${typeLabel(eventType)}` : null,
+    calculatedStatus ? `${t('statutCalcule')}: ${t(`calculatedStatusLabels.${calculatedStatus}`)}` : null,
     status ? `${t('statut')}: ${t(`statusLabels.${status}`)}` : null,
   ].filter((label): label is string => label !== null);
 
@@ -314,6 +340,7 @@ export default function PointagesPage() {
     setSensorLookup('');
     setSelectedSensorOption(undefined);
     setEventType(undefined);
+    setCalculatedStatus(undefined);
     setStatus(undefined);
     setOffset(0);
     setSelectedIds([]);
@@ -360,6 +387,7 @@ export default function PointagesPage() {
           employe_id: employeeId,
           capteur_id: sensorId,
           type_evenement: eventType,
+          statut_calcul: calculatedStatus,
           statut: status,
           search: search || undefined,
         },
@@ -543,6 +571,23 @@ export default function PointagesPage() {
                   <SelectItem value="all">{t('tousTypes')}</SelectItem>
                   {eventTypes.map((type) => (
                     <SelectItem key={type} value={type}>{typeLabel(type)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label={t('statutCalcule')} htmlFor="pointages-statut-calcule">
+              <Select value={calculatedStatus ?? 'all'} onValueChange={(value) => {
+                setCalculatedStatus(!value || value === 'all' ? undefined : value as Pointage['statut_calcul']);
+                setOffset(0);
+                setSelectedIds([]);
+              }}>
+                <SelectTrigger id="pointages-statut-calcule" aria-label={t('statutCalcule')}>
+                  <SelectValue>{calculatedStatus ? t(`calculatedStatusLabels.${calculatedStatus}`) : t('tousStatuts')}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('tousStatuts')}</SelectItem>
+                  {(['VALIDE', 'RETARD', 'ANORMAL', 'UNKNOWN'] as const).map((value) => (
+                    <SelectItem key={value} value={value}>{t(`calculatedStatusLabels.${value}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
