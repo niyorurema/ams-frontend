@@ -83,10 +83,14 @@ export function useRealtimePointages() {
           const lecteur = response.body.getReader();
           const decodeur = new TextDecoder();
           let tampon = '';
+          let finNormaleDuFlux = false;
 
           while (!controller.signal.aborted) {
             const { value, done } = await lecteur.read();
-            if (done) break;
+            if (done) {
+              finNormaleDuFlux = true;
+              break;
+            }
             tampon = (tampon + decodeur.decode(value, { stream: true })).replace(/\r\n?/g, '\n');
 
             let finBloc = tampon.indexOf('\n\n');
@@ -129,9 +133,11 @@ export function useRealtimePointages() {
             }
           }
           await response.body.cancel().catch(() => undefined);
-          if (!controller.signal.aborted) {
+          if (!controller.signal.aborted && !finNormaleDuFlux) {
             tentativesEchouees++;
             setConnectionState({ scope, status: tentativesEchouees >= 5 ? 'error' : 'reconnecting' });
+          } else if (finNormaleDuFlux) {
+            tentativesEchouees = 0;
           }
         } catch {
           if (controller.signal.aborted) return;
