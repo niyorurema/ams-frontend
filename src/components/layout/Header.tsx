@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -81,7 +81,7 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
     setHasPreviousPage(history.length > 1);
   }, [pathname]);
 
-  const revenir = () => {
+  const revenir = useCallback(() => {
     if (navigationHistory.current.length > 1) {
       router.back();
       return;
@@ -89,7 +89,27 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
     if (pathname !== homePath) {
       router.replace(homePath);
     }
-  };
+  }, [homePath, pathname, router]);
+
+  useEffect(() => {
+    const handleBackShortcut = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement
+        && (target.isContentEditable || target.closest('input, textarea, select, [role="textbox"]'))) {
+        return;
+      }
+
+      const altLeft = event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.key === 'ArrowLeft';
+      const macBack = event.metaKey && !event.altKey && !event.ctrlKey && !event.shiftKey && event.key === '[';
+      if (!altLeft && !macBack) return;
+
+      event.preventDefault();
+      revenir();
+    };
+
+    window.addEventListener('keydown', handleBackShortcut);
+    return () => window.removeEventListener('keydown', handleBackShortcut);
+  }, [revenir]);
 
   const logoUrl = tenant?.logo_url
     ? tenant.logo_url.startsWith('http')
@@ -162,7 +182,8 @@ export function Header({ onMobileMenuToggle, mobileMenuOpen }: HeaderProps) {
           variant="ghost"
           size="icon"
           aria-label={t('backToPreviousPage')}
-          title={t('backToPreviousPage')}
+          aria-keyshortcuts="Alt+ArrowLeft Meta+["
+          title={`${t('backToPreviousPage')} (${t('backShortcutHint')})`}
           disabled={pathname === homePath && !hasPreviousPage}
           onClick={revenir}
         >

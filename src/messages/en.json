@@ -88,6 +88,7 @@
     "collapseNavigation": "Collapse navigation",
     "expandNavigation": "Expand navigation",
     "backToPreviousPage": "Go back to the previous page",
+    "backShortcutHint": "Alt + ← (Mac: ⌘ + [)",
     "previousNavigationItems": "Previous navigation items",
     "nextNavigationItems": "Next navigation items",
     "restoreDefaultPosition": "Move navigation to the left",
