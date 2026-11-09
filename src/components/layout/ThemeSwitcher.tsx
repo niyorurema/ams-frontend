@@ -2,7 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun, Sunrise } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,9 +18,10 @@ export function ThemeSwitcher() {
   const { resolvedTheme, setTheme, theme } = useTheme();
   const mounted = useHydrated();
 
-  const CurrentThemeIcon =
-    !mounted || theme === 'system'
-      ? Monitor
+  const CurrentThemeIcon = !mounted || theme === 'system'
+    ? Monitor
+    : theme === 'aurore'
+      ? Sunrise
       : resolvedTheme === 'dark'
         ? Moon
         : Sun;
@@ -53,6 +54,10 @@ export function ThemeSwitcher() {
         <DropdownMenuItem onClick={() => setTheme('system')}>
           <Monitor aria-hidden="true" />
           {t('themeSystem')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('aurore')}>
+          <Sunrise aria-hidden="true" />
+          {t('themeAurora')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

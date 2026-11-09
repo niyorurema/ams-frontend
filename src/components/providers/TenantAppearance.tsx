@@ -84,6 +84,7 @@ export function TenantAppearance() {
 
     const applyTenantColors = () => {
       const isDark = root.classList.contains('dark') || resolvedTheme === 'dark';
+      const isAurora = root.classList.contains('aurore');
       root.style.setProperty('--primary', primary);
       root.style.setProperty('--primary-foreground', foregroundFor(primary));
       root.style.setProperty('--sidebar-primary', primary);
@@ -97,6 +98,13 @@ export function TenantAppearance() {
         root.style.setProperty('--sidebar-accent-foreground', '#ffffff');
         root.style.setProperty('--header-background', '#171717');
         root.style.setProperty('--header-foreground', '#ffffff');
+      } else if (isAurora) {
+        root.style.setProperty('--sidebar', '#fff7fb');
+        root.style.setProperty('--sidebar-foreground', '#382a3a');
+        root.style.setProperty('--sidebar-accent', '#f5e6f1');
+        root.style.setProperty('--sidebar-accent-foreground', '#382a3a');
+        root.style.setProperty('--header-background', '#fff7fb');
+        root.style.setProperty('--header-foreground', '#382a3a');
       } else {
         root.style.setProperty('--sidebar', sidebar);
         root.style.setProperty('--sidebar-foreground', foregroundFor(sidebar));

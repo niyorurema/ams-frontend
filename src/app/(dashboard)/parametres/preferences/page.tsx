@@ -21,7 +21,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useLocale, useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import { Check, GripVertical, Monitor, Moon, RotateCcw, Sun } from 'lucide-react';
+import { Check, GripVertical, Monitor, Moon, RotateCcw, Sun, Sunrise } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,6 +76,7 @@ const themeChoices = [
   { value: 'light', icon: Sun },
   { value: 'dark', icon: Moon },
   { value: 'system', icon: Monitor },
+  { value: 'aurore', icon: Sunrise },
 ] as const;
 
 const widgetIds = [
@@ -257,6 +258,7 @@ export default function PreferencesPage() {
     light: t('themeLight'),
     dark: t('themeDark'),
     system: t('themeSystem'),
+    aurore: t('themeAurora'),
   };
   return (
     <div className="w-full space-y-6">
@@ -278,7 +280,7 @@ export default function PreferencesPage() {
         <CardContent className="space-y-6">
           <fieldset className="space-y-3">
             <legend className="text-sm font-medium">{t('theme')}</legend>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {themeChoices.map(({ value, icon: Icon }) => (
                 <label
                   key={value}

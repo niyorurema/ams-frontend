@@ -1235,6 +1235,7 @@
     "themeLight": "Clair",
     "themeDark": "Sombre",
     "themeSystem": "Système",
+    "themeAurora": "Aurore",
     "primaryColor": "Couleur principale",
     "primaryColors": {
       "red": "Rouge (par défaut)",

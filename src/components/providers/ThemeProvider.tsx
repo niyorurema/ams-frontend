@@ -13,6 +13,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       attribute="class"
       defaultTheme="system"
       enableSystem
+      themes={['light', 'dark', 'system', 'aurore']}
       disableTransitionOnChange
       storageKey="ams-theme"
     >
