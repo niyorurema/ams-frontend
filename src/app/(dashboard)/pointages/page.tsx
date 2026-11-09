@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
@@ -75,10 +76,10 @@ import { EvolutionChart } from '@/components/pointages/evolution-chart';
 import { PointageManuelDialog } from '@/components/pointages/pointage-manuel-dialog';
 import { PointagesRealtime } from '@/components/pointages/pointages-realtime';
 import { RecalculerDialog } from '@/components/pointages/recalculer-dialog';
-import { getErrorMessage } from '@/lib/api';
+import { api, getErrorMessage } from '@/lib/api';
 import { useAllAdminTenants } from '@/hooks/useAdminTenants';
-import { useCapteurs } from '@/hooks/useCapteurs';
-import { useEmployes } from '@/hooks/useEmployes';
+import { useCapteurs, type CapteursResponse } from '@/hooks/useCapteurs';
+import { useEmployes, type EmployesResponse } from '@/hooks/useEmployes';
 import {
   useExportPointages,
   useRecalculerPointagesMasse,
@@ -261,6 +262,7 @@ export default function PointagesPage() {
     ? selectedTenant === 'all' ? undefined : Number(selectedTenant)
     : user?.tenant_id;
   const tenantsQuery = useAllAdminTenants(isSuperAdmin);
+  const allTenantScope = isSuperAdmin && tenantScopeId === undefined;
   const pointagesQuery = usePointages(filters);
   const statsQuery = useStatsPointages(period.debut, period.fin, filters.tenant_id);
   const capteursQuery = useCapteurs({
@@ -268,14 +270,49 @@ export default function PointagesPage() {
     search: sensorLookup || undefined,
     limit: 50,
     offset: 0,
-    enabled: !isSuperAdmin || tenantScopeId !== undefined,
+    enabled: !allTenantScope,
   });
   const employesQuery = useEmployes({
     tenant_id: tenantScopeId,
     search: employeeLookup || undefined,
     limit: 50,
     offset: 0,
-    enabled: !isSuperAdmin || tenantScopeId !== undefined,
+    enabled: !allTenantScope,
+  });
+  const tenantsForFilter = (tenantsQuery.data ?? []).filter((tenant) => tenant.is_active && !tenant.deleted_at);
+  const employesTousTenantsQueries = useQueries({
+    queries: allTenantScope
+      ? tenantsForFilter.map((tenant) => ({
+        queryKey: ['employes', 'pointages-filter', tenant.id, employeeLookup],
+        queryFn: async () => {
+          const params = new URLSearchParams({
+            tenant_id: String(tenant.id),
+            limit: '50',
+            offset: '0',
+          });
+          if (employeeLookup) params.set('search', employeeLookup);
+          const response = await api.get<{ data: EmployesResponse }>(`/api/employes?${params}`);
+          return response.data.data.items;
+        },
+      }))
+      : [],
+  });
+  const capteursTousTenantsQueries = useQueries({
+    queries: allTenantScope
+      ? tenantsForFilter.map((tenant) => ({
+        queryKey: ['capteurs', 'pointages-filter', tenant.id, sensorLookup],
+        queryFn: async () => {
+          const params = new URLSearchParams({
+            tenant_id: String(tenant.id),
+            limit: '50',
+            offset: '0',
+          });
+          if (sensorLookup) params.set('search', sensorLookup);
+          const response = await api.get<{ data: CapteursResponse }>(`/api/capteurs?${params}`);
+          return response.data.data.items;
+        },
+      }))
+      : [],
   });
   const exportMutation = useExportPointages();
   const bulkRecalculate = useRecalculerPointagesMasse();
@@ -290,29 +327,58 @@ export default function PointagesPage() {
     ? buildChartData(statsQuery.data.par_jour, period, locale)
     : [];
   const numberFormat = new Intl.NumberFormat(locale === 'fr' ? 'fr-FR' : 'en-GB');
+  const employesFilterError = allTenantScope
+    ? tenantsQuery.isError || employesTousTenantsQueries.some((query) => query.isError)
+    : employesQuery.isError;
+  const capteursFilterError = allTenantScope
+    ? tenantsQuery.isError || capteursTousTenantsQueries.some((query) => query.isError)
+    : capteursQuery.isError;
+  const employesFilterLoading = allTenantScope
+    ? tenantsQuery.isLoading || employesTousTenantsQueries.some((query) => query.isLoading)
+    : employesQuery.isLoading;
+  const capteursFilterLoading = allTenantScope
+    ? tenantsQuery.isLoading || capteursTousTenantsQueries.some((query) => query.isLoading)
+    : capteursQuery.isLoading;
   const employeOptions = useMemo(() => {
-    const options: ComboboxOption[] = (employesQuery.data?.items ?? []).map((employe) => ({
-      value: String(employe.id),
-      label: `${employe.matricule} — ${employe.nom} ${employe.prenom}`,
-      description: employe.unite_nom ?? undefined,
-      keywords: `${employe.nom} ${employe.prenom} ${employe.matricule}`,
-    }));
+    const employesPourFiltre = allTenantScope
+      ? employesTousTenantsQueries.flatMap((query) => query.data ?? [])
+      : employesQuery.data?.items ?? [];
+    const options: ComboboxOption[] = employesPourFiltre.map((employe) => {
+      const tenantName = allTenantScope
+        ? tenantsForFilter.find((tenant) => tenant.id === employe.tenant_id)?.name
+        : undefined;
+      return {
+        value: String(employe.id),
+        label: `${tenantName ? `${tenantName} · ` : ''}${employe.matricule} — ${employe.nom} ${employe.prenom}`,
+        description: [tenantName, employe.unite_nom].filter(Boolean).join(' · ') || undefined,
+        keywords: `${tenantName ?? ''} ${employe.nom} ${employe.prenom} ${employe.matricule}`,
+      };
+    });
     if (selectedEmployeeOption && !options.some((option) => option.value === selectedEmployeeOption.value)) {
       options.unshift(selectedEmployeeOption);
     }
     return options;
-  }, [employesQuery.data?.items, selectedEmployeeOption]);
+  }, [allTenantScope, employesQuery.data?.items, employesTousTenantsQueries, selectedEmployeeOption, tenantsForFilter]);
   const capteurOptions = useMemo(() => {
-    const options: ComboboxOption[] = (capteursQuery.data?.items ?? []).map((capteur) => ({
-      value: String(capteur.id),
-      label: capteur.nom,
-      description: `${capteur.adresse_ip}:${capteur.port}`,
-    }));
+    const capteursPourFiltre = allTenantScope
+      ? capteursTousTenantsQueries.flatMap((query) => query.data ?? [])
+      : capteursQuery.data?.items ?? [];
+    const options: ComboboxOption[] = capteursPourFiltre.map((capteur) => {
+      const tenantName = allTenantScope
+        ? tenantsForFilter.find((tenant) => tenant.id === capteur.tenant_id)?.name
+        : undefined;
+      return {
+        value: String(capteur.id),
+        label: `${tenantName ? `${tenantName} · ` : ''}${capteur.nom}`,
+        description: `${tenantName ? `${tenantName} · ` : ''}${capteur.adresse_ip}:${capteur.port}`,
+        keywords: tenantName,
+      };
+    });
     if (selectedSensorOption && !options.some((option) => option.value === selectedSensorOption.value)) {
       options.unshift(selectedSensorOption);
     }
     return options;
-  }, [capteursQuery.data?.items, selectedSensorOption]);
+  }, [allTenantScope, capteursQuery.data?.items, capteursTousTenantsQueries, selectedSensorOption, tenantsForFilter]);
   const activeFilterLabels = [
     search ? `${t('recherche')}: ${search}` : null,
     employeeId !== undefined
@@ -519,20 +585,21 @@ export default function PointagesPage() {
                 options={employeOptions}
                 value={employeeId === undefined ? 'all' : String(employeeId)}
                 onValueChange={(value) => {
-                  setEmployeeId(value === 'all' ? undefined : Number(value));
-                  setSelectedEmployeeOption(value === 'all'
+                  setEmployeeId(!value || value === 'all' ? undefined : Number(value));
+                  setSelectedEmployeeOption(!value || value === 'all'
                     ? undefined
                     : employeOptions.find((option) => option.value === value));
                   setOffset(0);
                   setSelectedIds([]);
                 }}
                 onSearch={setEmployeeLookupText}
-                placeholder={isSuperAdmin && tenantScopeId === undefined ? t('choisirTenantPourFiltrer') : t('tousEmployes')}
+                placeholder={t('tousEmployes')}
                 searchPlaceholder={t('rechercherEmploye')}
-                emptyMessage={employesQuery.isError ? t('erreurEmployesVisibles') : t('aucunEmploye')}
+                emptyMessage={employesFilterError
+                  ? t('erreurEmployesVisibles')
+                  : employesFilterLoading ? t('chargementEmployes') : t('aucunEmploye')}
                 allowAll
                 allLabel={t('tousEmployes')}
-                disabled={employesQuery.isLoading || employesQuery.isError || isSuperAdmin && tenantScopeId === undefined}
               />
             </FormField>
             <FormField label={t('capteur')} htmlFor="pointages-capteur">
@@ -542,20 +609,21 @@ export default function PointagesPage() {
                 options={capteurOptions}
                 value={sensorId === undefined ? 'all' : String(sensorId)}
                 onValueChange={(value) => {
-                  setSensorId(value === 'all' ? undefined : Number(value));
-                  setSelectedSensorOption(value === 'all'
+                  setSensorId(!value || value === 'all' ? undefined : Number(value));
+                  setSelectedSensorOption(!value || value === 'all'
                     ? undefined
                     : capteurOptions.find((option) => option.value === value));
                   setOffset(0);
                   setSelectedIds([]);
                 }}
                 onSearch={setSensorLookupText}
-                placeholder={isSuperAdmin && tenantScopeId === undefined ? t('choisirTenantPourFiltrer') : t('tousCapteurs')}
+                placeholder={t('tousCapteurs')}
                 searchPlaceholder={t('rechercherCapteur')}
-                emptyMessage={capteursQuery.isError ? t('erreurChargementCapteurs') : t('aucunCapteur')}
+                emptyMessage={capteursFilterError
+                  ? t('erreurChargementCapteurs')
+                  : capteursFilterLoading ? t('chargementCapteurs') : t('aucunCapteur')}
                 allowAll
                 allLabel={t('tousCapteurs')}
-                disabled={capteursQuery.isLoading || capteursQuery.isError || isSuperAdmin && tenantScopeId === undefined}
               />
             </FormField>
             <FormField label={t('type')} htmlFor="pointages-type">

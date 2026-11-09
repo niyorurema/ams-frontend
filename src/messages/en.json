@@ -916,6 +916,7 @@
     "filtresActifs": "{count} active filter(s)",
     "rechercherEmploye": "Search employees...",
     "rechercherCapteur": "Search sensors...",
+    "chargementCapteurs": "Loading sensors…",
     "aucunEmploye": "No employees found",
     "aucunCapteur": "No sensors found",
     "employeInconnu": "Unidentified employee",

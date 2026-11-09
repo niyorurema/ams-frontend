@@ -916,6 +916,7 @@
     "filtresActifs": "{count} filtre(s) actif(s)",
     "rechercherEmploye": "Rechercher un employé...",
     "rechercherCapteur": "Rechercher un capteur...",
+    "chargementCapteurs": "Chargement des capteurs…",
     "aucunEmploye": "Aucun employé trouvé",
     "aucunCapteur": "Aucun capteur trouvé",
     "employeInconnu": "Employé non identifié",
