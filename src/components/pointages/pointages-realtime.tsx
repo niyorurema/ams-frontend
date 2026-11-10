@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { enGB, fr } from 'date-fns/locale';
 import { AlertCircle, LoaderCircle, Wifi, WifiOff } from 'lucide-react';
@@ -28,6 +29,7 @@ export function PointagesRealtime() {
   const t = useTranslations('pointages');
   const locale = useLocale();
   const { events, status } = useRealtimePointages();
+  const [now, setNow] = useState<number | null>(null);
   const dateLocale = locale === 'fr' ? fr : enGB;
   const statusIcon = status === 'connected'
     ? Wifi
@@ -42,6 +44,11 @@ export function PointagesRealtime() {
     : status === 'error' || status === 'auth-error'
       ? 'destructive'
       : 'secondary';
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setNow(Date.now()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <Card>
@@ -62,7 +69,10 @@ export function PointagesRealtime() {
           <div className="max-h-72 space-y-2 overflow-y-auto">
             {events.slice(0, 8).map((event) => {
               const date = parseISO(event.data.date_pointage.replace(' ', 'T'));
-              const dateValide = !Number.isNaN(date.getTime()) && date.getFullYear() >= 2001;
+              const dateValide = !Number.isNaN(date.getTime())
+                && date.getFullYear() >= 2001
+                && now !== null
+                && date.getTime() <= now + 5 * 60 * 1000;
               const employeeLabel = event.data.employe_nom?.trim()
                 || (event.data.employe_matricule
                   ? t('realtimeMatricule', { matricule: event.data.employe_matricule })

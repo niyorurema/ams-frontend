@@ -125,6 +125,15 @@ export interface PersonalAttendancePunch {
   capteur: string | null;
 }
 
+export interface RejectedPersonalPunch {
+  id: number;
+  date_capteur: string;
+  recu_le: string;
+  motif: string;
+  type_evenement: string;
+  capteur: string | null;
+}
+
 export interface PersonalAttendanceHistory {
   date_du_jour: string;
   date_courante: string;
@@ -136,6 +145,8 @@ export interface PersonalAttendanceHistory {
   presence_du_jour: PersonalAttendanceDay;
   pointages_du_jour: PersonalAttendancePunch[];
   pointages: PersonalAttendancePunch[];
+  pointages_rejetes: RejectedPersonalPunch[];
+  pointages_rejetes_pagination: { limit: number; offset: number; total: number };
   evaluation?: {
     periode: { debut: string; fin: string };
     totaux: {
@@ -278,13 +289,15 @@ export function usePersonalAttendance(
   matricule = '',
   periodeDebut = '',
   periodeFin = '',
+  rejetsOffset = 0,
 ) {
   const queryHistory = useQuery({
-    queryKey: ['profile', 'attendance', dateJour, matricule, 'history'],
+    queryKey: ['profile', 'attendance', dateJour, matricule, rejetsOffset, 'history'],
     queryFn: async () => {
       const params = new URLSearchParams({ limit: '30' });
       if (dateJour) params.set('date_jour', dateJour);
       if (matricule) params.set('matricule', matricule);
+      if (rejetsOffset > 0) params.set('rejets_offset', String(rejetsOffset));
       const response = await api.get<ApiResponse<PersonalAttendanceHistory>>(
         `/api/me/historique?${params.toString()}`,
       );

@@ -240,6 +240,25 @@ export function useUpdateAttendanceRuleSettings() {
   });
 }
 
+/** Met à jour la tolérance des dates de capteur indépendamment des règles datées. */
+export function useUpdateFutureTimestampTolerance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (minutes: number) => {
+      const response = await api.put<ApiResponse<AttendanceRuleSettings>>(
+        '/api/admin/tenant/pointage-parametres',
+        { parametres: { marge_pointage_futur_minutes: minutes } }
+      );
+      return response.data.data;
+    },
+    onSuccess: (settings) => {
+      queryClient.setQueryData([...attendanceRuleSettingsQueryKey, null], settings);
+      void queryClient.invalidateQueries({ queryKey: attendanceRuleSettingsQueryKey });
+    },
+  });
+}
+
 /** Recalcule une journée dans le périmètre du tenant connecté. */
 export function useRecalculateAttendanceDay() {
   const queryClient = useQueryClient();

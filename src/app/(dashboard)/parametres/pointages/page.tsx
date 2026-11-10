@@ -13,11 +13,73 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getErrorMessage } from '@/lib/api';
 import { useCreateDefaultHoraire, useHoraires, useSetDefaultHoraire, useUpdateHoraire, type HorairePlage, type HoraireTenant } from '@/hooks/useHoraires';
-import { useTenantConfig, useUpdateTenantWorkingDays } from '@/hooks/useTenantConfig';
+import { useAttendanceRuleSettings, useTenantConfig, useUpdateFutureTimestampTolerance, useUpdateTenantWorkingDays } from '@/hooks/useTenantConfig';
 import { useAuthStore } from '@/stores/authStore';
 import { AttendanceRuleSettings } from '@/components/settings/attendance-rule-settings';
 
 const TYPES_POINTAGE: HorairePlage['type'][] = ['CHECK_IN', 'BREAK_OUT', 'BREAK_IN', 'CHECK_OUT'];
+
+function FutureTimestampToleranceSettings({ canManageSettings }: { canManageSettings: boolean }) {
+  const t = useTranslations('parametres.pointages.futureTolerance');
+  const settingsQuery = useAttendanceRuleSettings();
+  const updateTolerance = useUpdateFutureTimestampTolerance();
+  const [draft, setDraft] = useState<number | null>(null);
+
+  if (settingsQuery.isLoading) {
+    return <Skeleton className="h-36 w-full" />;
+  }
+  if (settingsQuery.isError || !settingsQuery.data) {
+    return <p role="alert" className="rounded-lg border p-4 text-sm text-destructive">{t('loadError')}</p>;
+  }
+
+  const currentValue = Number(settingsQuery.data.parametres.marge_pointage_futur_minutes?.valeur ?? 5);
+  const value = draft ?? currentValue;
+  const enregistrer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!Number.isInteger(value) || value < 0 || value > 60) return;
+    try {
+      await updateTolerance.mutateAsync(value);
+      setDraft(null);
+      toast.success(t('saved'));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  return (
+    <form onSubmit={(event) => void enregistrer(event)}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('title')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-end justify-between gap-4">
+          <label className="grid gap-1.5 text-sm">
+            {t('label')}
+            <Input
+              type="number"
+              min={0}
+              max={60}
+              step={1}
+              required
+              value={value}
+              disabled={!canManageSettings || updateTolerance.isPending}
+              onChange={(event) => setDraft(event.target.value === '' ? 0 : Number(event.target.value))}
+              className="w-36"
+            />
+            <span className="text-xs text-muted-foreground">{t('help')}</span>
+          </label>
+          {canManageSettings && (
+            <Button type="submit" disabled={updateTolerance.isPending || value === currentValue || value < 0 || value > 60}>
+              <Save aria-hidden="true" />
+              {updateTolerance.isPending ? t('saving') : t('save')}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </form>
+  );
+}
 
 function estActif(horaire: HoraireTenant): boolean {
   return horaire.actif === true || horaire.actif === 1 || horaire.actif === '1';
@@ -333,6 +395,8 @@ export default function PointagesSettingsPage() {
         canManageSettings={Boolean(canWrite)}
         canManageOptIn={user?.is_super_admin === true || user?.role === 'admin' || user?.role === 'rh'}
       />
+
+      <FutureTimestampToleranceSettings canManageSettings={Boolean(canWrite)} />
 
       {!readOnly && (
         <Card>

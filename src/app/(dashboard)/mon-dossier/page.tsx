@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowUpRight, Clock3, Fingerprint, History, RefreshCw, Search, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, Clock3, Fingerprint, History, RefreshCw, Search, ShieldCheck, UserRound } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -75,6 +75,7 @@ export default function MonDossierPage() {
   const [matriculeRecherche, setMatriculeRecherche] = useState('');
   const [periodeFin, setPeriodeFin] = useState('');
   const [periodeDebut, setPeriodeDebut] = useState('');
+  const [rejetsOffset, setRejetsOffset] = useState(0);
   const [activeTab, setActiveTab] = useState<'aujourdhui' | 'historique' | 'evaluation' | 'compte'>('aujourdhui');
   const [serverClock, setServerClock] = useState<number | null>(null);
   const profileQuery = useCurrentProfile(Boolean(user));
@@ -97,6 +98,7 @@ export default function MonDossierPage() {
     matriculeRecherche,
     periodeDebutEffective,
     periodeFinEffective,
+    rejetsOffset,
   );
   const createPersonalPunch = useCreatePersonalPunch();
   const registerPasskey = useRegisterPersonalPasskey();
@@ -161,6 +163,7 @@ export default function MonDossierPage() {
     }).format(instantServeur)
     : null;
   const employeCible = attendanceQuery.data?.employe;
+  const rejetsLimit = attendanceQuery.data?.pointages_rejetes_pagination.limit ?? 20;
 
   return (
     <div className="w-full space-y-6">
@@ -245,6 +248,7 @@ export default function MonDossierPage() {
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' && canSearchMatricule) {
                             event.preventDefault();
+                            setRejetsOffset(0);
                             setMatriculeRecherche(matriculeSaisi.trim());
                           }
                         }}
@@ -258,6 +262,7 @@ export default function MonDossierPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
+                          setRejetsOffset(0);
                           setMatriculeRecherche(matriculeSaisi.trim());
                           setDateSelectionnee(dateAujourdhui);
                         }}
@@ -455,6 +460,67 @@ export default function MonDossierPage() {
                         </li>
                       ))}
                     </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className={activeTab !== 'historique' ? 'hidden' : undefined}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck aria-hidden="true" className="size-5" />
+                    {t('rejectedHistoryTitle')}
+                  </CardTitle>
+                  <CardDescription>{t('rejectedHistoryDescription')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {attendanceQuery.data.pointages_rejetes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t('noRejectedHistory')}</p>
+                  ) : (
+                    <>
+                      <ul className="divide-y rounded-lg border">
+                        {attendanceQuery.data.pointages_rejetes.map((punch) => (
+                          <li key={punch.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 text-sm">
+                            <span className="font-medium">{t(`punchTypes.${punch.type_evenement}`)}</span>
+                            <span className="font-mono tabular-nums">{punch.date_capteur}</span>
+                            <span className="text-muted-foreground">{punch.capteur ?? t('notAvailable')}</span>
+                            <span className="text-muted-foreground">
+                              {t('rejectedReceivedAt', { date: formatDate(punch.recu_le, locale, t('notAvailable')) })}
+                            </span>
+                            <Badge variant="destructive">{t('rejectedNotCounted')}</Badge>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm text-muted-foreground">
+                          {t('rejectedCount', {
+                            shown: attendanceQuery.data.pointages_rejetes.length,
+                            total: attendanceQuery.data.pointages_rejetes_pagination.total,
+                          })}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={rejetsOffset === 0}
+                            onClick={() => setRejetsOffset(Math.max(0, rejetsOffset - rejetsLimit))}
+                          >
+                            <ArrowLeft aria-hidden="true" className="size-4" />
+                            {t('previousPage')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={rejetsOffset + attendanceQuery.data.pointages_rejetes.length >= attendanceQuery.data.pointages_rejetes_pagination.total}
+                            onClick={() => setRejetsOffset(rejetsOffset + rejetsLimit)}
+                          >
+                            {t('nextPage')}
+                            <ArrowRight aria-hidden="true" className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
