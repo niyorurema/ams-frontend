@@ -50,6 +50,29 @@ function formatDate(value: string | null, locale: string, empty: string): string
     }).format(parsed);
 }
 
+function formatAttendanceDate(value: string | null, locale: string, timezone: string, empty: string): string {
+  if (!value) return empty;
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value);
+  const normalized = dateOnly
+    ? `${value}T12:00:00Z`
+    : `${value.replace(' ', 'T')}${hasTimezone ? '' : 'Z'}`;
+  const parsed = new Date(normalized);
+
+  // Keep timezone-free database DATETIME values as written instead of shifting them to the browser timezone.
+  return Number.isNaN(parsed.getTime())
+    ? empty
+    : new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      ...(!dateOnly ? { timeStyle: 'short' as const } : {}),
+      timeZone: dateOnly || !hasTimezone ? 'UTC' : timezone,
+    }).format(parsed);
+}
+
+function csvCell(value: string | number): string {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
 function Detail({ label, value }: { label: string; value: ReactNode }) {
   const displayValue = value === null || value === undefined || value === '' ? '—' : value;
 
@@ -94,11 +117,13 @@ export default function MonDossierPage() {
   const periodeDebutEffective = periodeDebut || (dateAujourdhui ? dateDecalee(dateAujourdhui, -30) : '');
   const attendanceQuery = usePersonalAttendance(
     dateConsultee,
-    peutConsulterPresence,
+    peutConsulterPresence && activeTab !== 'compte',
     matriculeRecherche,
     periodeDebutEffective,
     periodeFinEffective,
     rejetsOffset,
+    activeTab === 'aujourdhui' || activeTab === 'historique',
+    activeTab === 'evaluation',
   );
   const createPersonalPunch = useCreatePersonalPunch();
   const registerPasskey = useRegisterPersonalPasskey();
@@ -148,7 +173,7 @@ export default function MonDossierPage() {
 
   const profile = profileQuery.data;
   const employee = profile.employe_details;
-  const nextExpected = dateConsultee === dateAujourdhui
+  const nextExpected = profile.is_active && employee?.actif && dateConsultee === dateAujourdhui
     && !matriculeRecherche
     && attendanceQuery.data?.passkey_registered
     ? attendanceQuery.data?.presence_du_jour.analyse_plages.find((step) => step.statut === 'MANQUANT')?.type
@@ -164,20 +189,21 @@ export default function MonDossierPage() {
     : null;
   const employeCible = attendanceQuery.data?.employe;
   const rejetsLimit = attendanceQuery.data?.pointages_rejetes_pagination.limit ?? 20;
+  const attendanceData = attendanceQuery.data;
 
   return (
     <div className="w-full space-y-6">
-      <nav aria-label="Sections du dossier" className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-1">
+      <div aria-label={t('sectionsLabel')} className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/30 p-1" role="group">
         {([
-          ['aujourdhui', 'Aujourd’hui'],
-          ['historique', 'Historique'],
-          ['evaluation', 'Évaluation'],
-          ['compte', 'Compte'],
+          ['aujourdhui', t('tabs.today')],
+          ['historique', t('tabs.history')],
+          ['evaluation', t('tabs.evaluation')],
+          ['compte', t('tabs.account')],
         ] as const).map(([value, label]) => (
           <button
             key={value}
             type="button"
-            aria-current={activeTab === value ? 'page' : undefined}
+            aria-pressed={activeTab === value}
             onClick={() => setActiveTab(value)}
             className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === value ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
           >{label}</button>
@@ -189,13 +215,46 @@ export default function MonDossierPage() {
           {t('editProfile')}
           <ArrowUpRight aria-hidden="true" className="size-4" />
         </Link>
-      </nav>
+      </div>
 
-      {activeTab !== 'compte' && peutConsulterPresence ? (
+      {activeTab !== 'compte' && (peutConsulterPresence || canSearchMatricule) ? (
         <section aria-labelledby="personal-attendance-title" className="space-y-6">
-          {attendanceQuery.isLoading ? (
+          {!peutConsulterPresence ? (
+            <Card>
+              <CardHeader>
+                <CardTitle id="personal-attendance-title">{t('attendanceUnavailableTitle')}</CardTitle>
+                <CardDescription>{t('searchEmployeeWithoutLinkDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="flex flex-wrap items-end gap-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const matricule = matriculeSaisi.trim();
+                    if (matricule) setMatriculeRecherche(matricule);
+                  }}
+                >
+                  <label className="grid gap-1 text-sm">
+                    {t('employeeMatricule')}
+                    <Input
+                      required
+                      maxLength={64}
+                      value={matriculeSaisi}
+                      onChange={(event) => setMatriculeSaisi(event.target.value)}
+                      placeholder={t('searchMatriculePlaceholder')}
+                      className="w-56"
+                    />
+                  </label>
+                  <Button type="submit" disabled={!matriculeSaisi.trim()}>
+                    <Search aria-hidden="true" className="size-4" />
+                    {t('searchEmployee')}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          ) : attendanceQuery.isLoading ? (
             <Skeleton className="h-72 w-full" />
-          ) : attendanceQuery.isError || !attendanceQuery.data ? (
+          ) : attendanceQuery.isError || !attendanceData ? (
             <Card>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
                 <p role="alert" className="text-sm text-destructive">
@@ -221,9 +280,9 @@ export default function MonDossierPage() {
                       {t('attendanceTitle')}
                     </CardTitle>
                     <div className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-                      <span>{formatDate(attendanceQuery.data.date_du_jour, locale, t('notAvailable'))}</span>
-                      {heureServeur && <time className="font-mono tabular-nums" aria-label={t('serverClock', { timezone: attendanceQuery.data.timezone })}>{heureServeur}</time>}
-                      {attendanceQuery.data.presence_du_jour.horaire_nom && <span>· {attendanceQuery.data.presence_du_jour.horaire_nom}</span>}
+                      <span>{formatAttendanceDate(attendanceData.date_du_jour, locale, attendanceData.timezone, t('notAvailable'))}</span>
+                      {heureServeur && <time className="font-mono tabular-nums" aria-label={t('serverClock', { timezone: attendanceData.timezone })}>{heureServeur}</time>}
+                      {attendanceData.presence_du_jour.horaire_nom && <span>· {attendanceData.presence_du_jour.horaire_nom}</span>}
                       {employeCible && <span>· {employeCible.prenom} {employeCible.nom}</span>}
                     </div>
                   </div>
@@ -292,28 +351,28 @@ export default function MonDossierPage() {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-lg border p-4">
                       <p className="text-sm text-muted-foreground">{t('attendanceStatus')}</p>
-                      <p className="mt-2 font-semibold">{t(`attendanceStatuses.${attendanceQuery.data.presence_du_jour.statut}`)}</p>
+                      <p className="mt-2 font-semibold">{t(`attendanceStatuses.${attendanceData.presence_du_jour.statut}`)}</p>
                     </div>
                     <div className="rounded-lg border p-4">
                       <p className="text-sm text-muted-foreground">{t('workedHours')}</p>
-                      <p className="mt-2 font-semibold tabular-nums">{duree(attendanceQuery.data.presence_du_jour.heures_travaillees * 60, t('hours'), t('minutes'))}</p>
+                      <p className="mt-2 font-semibold tabular-nums">{duree(attendanceData.presence_du_jour.heures_travaillees * 60, t('hours'), t('minutes'))}</p>
                     </div>
                     <div className="rounded-lg border p-4">
                       <p className="text-sm text-muted-foreground">{t('lateMinutes')}</p>
-                      <p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.presence_du_jour.retard_total_minutes} {t('minutes')}</p>
+                      <p className="mt-2 font-semibold tabular-nums">{attendanceData.presence_du_jour.retard_total_minutes} {t('minutes')}</p>
                     </div>
                     <div className="rounded-lg border p-4">
                       <p className="text-sm text-muted-foreground">{t('punchesOnDate')}</p>
-                      <p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.pointages_du_jour.length}</p>
+                      <p className="mt-2 font-semibold tabular-nums">{attendanceData.pointages_du_jour.length}</p>
                     </div>
                   </div>
 
-                  {attendanceQuery.data.presence_du_jour.progression_pourcentage === null ? (
+                  {attendanceData.presence_du_jour.progression_pourcentage === null ? (
                     <p className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
-                      {attendanceQuery.data.presence_du_jour.statut === 'REPOS'
+                      {attendanceData.presence_du_jour.statut === 'REPOS'
                         ? t('noScheduleForDate')
-                        : attendanceQuery.data.presence_du_jour.statut === 'FERIE'
-                          ? t('holidayOnDate', { name: attendanceQuery.data.presence_du_jour.jour_ferie_nom ?? '' })
+                        : attendanceData.presence_du_jour.statut === 'FERIE'
+                          ? t('holidayOnDate', { name: attendanceData.presence_du_jour.jour_ferie_nom ?? '' })
                           : t('noScheduleAvailableForDate')}
                     </p>
                   ) : (
@@ -321,9 +380,9 @@ export default function MonDossierPage() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-sm font-medium">{t('dailyProgress')}</p>
                         <p className="text-sm font-semibold tabular-nums">
-                          {attendanceQuery.data.presence_du_jour.progression_pourcentage}% · {t('checkpointsCompleted', {
-                            completed: attendanceQuery.data.presence_du_jour.etapes_effectuees,
-                            total: attendanceQuery.data.presence_du_jour.etapes_attendues,
+                          {attendanceData.presence_du_jour.progression_pourcentage}% · {t('checkpointsCompleted', {
+                            completed: attendanceData.presence_du_jour.etapes_effectuees,
+                            total: attendanceData.presence_du_jour.etapes_attendues,
                           })}
                         </p>
                       </div>
@@ -332,20 +391,20 @@ export default function MonDossierPage() {
                         aria-label={t('dailyProgress')}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-valuenow={attendanceQuery.data.presence_du_jour.progression_pourcentage}
+                        aria-valuenow={attendanceData.presence_du_jour.progression_pourcentage}
                         className="h-3 overflow-hidden rounded-full bg-muted"
                       >
                         <div
                           className="h-full rounded-full bg-primary transition-[width] duration-500"
-                          style={{ width: `${attendanceQuery.data.presence_du_jour.progression_pourcentage}%` }}
+                          style={{ width: `${attendanceData.presence_du_jour.progression_pourcentage}%` }}
                         />
                       </div>
                     </div>
                   )}
 
-                  {attendanceQuery.data.presence_du_jour.analyse_plages.length > 0 && (
+                  {attendanceData.presence_du_jour.analyse_plages.length > 0 && (
                     <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      {attendanceQuery.data.presence_du_jour.analyse_plages.map((step, index) => (
+                      {attendanceData.presence_du_jour.analyse_plages.map((step, index) => (
                         <li key={`${step.type}-${index}`} className="flex min-w-0 items-start gap-3 rounded-lg border p-3">
                           <span className={`mt-1 size-2.5 shrink-0 rounded-full ${step.statut === 'MANQUANT' ? 'bg-muted-foreground/40' : 'bg-primary'}`} />
                           <div className="min-w-0">
@@ -369,19 +428,19 @@ export default function MonDossierPage() {
                     </ol>
                   )}
 
-                  {dateConsultee === dateAujourdhui && !matriculeRecherche && (
+                  {dateConsultee === dateAujourdhui && !matriculeRecherche && profile.is_active && employee?.actif && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
                       <div>
-                        <p className="font-medium">{attendanceQuery.data.passkey_registered ? t('manualPunchTitle') : t('passkeyRequired')}</p>
+                        <p className="font-medium">{attendanceData.passkey_registered ? t('manualPunchTitle') : t('passkeyRequired')}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {attendanceQuery.data.passkey_registered
+                          {attendanceData.passkey_registered
                             ? t('manualPunchDescription')
-                            : attendanceQuery.data.passkey_enrollment_approved
+                            : attendanceData.passkey_enrollment_approved
                               ? t('passkeyDescription')
                               : t('passkeyAwaitingApproval')}
                         </p>
                       </div>
-                      {attendanceQuery.data.passkey_registered ? (
+                      {attendanceData.passkey_registered ? (
                         <Button
                           type="button"
                           disabled={!nextExpected || createPersonalPunch.isPending}
@@ -399,7 +458,7 @@ export default function MonDossierPage() {
                               ? t('markPunch', { type: t(`punchTypes.${nextExpected}`) })
                               : t('noPunchExpected')}
                         </Button>
-                      ) : attendanceQuery.data.passkey_enrollment_approved ? (
+                      ) : attendanceData.passkey_enrollment_approved ? (
                         <Button
                           type="button"
                           disabled={registerPasskey.isPending}
@@ -418,13 +477,13 @@ export default function MonDossierPage() {
                     </div>
                   )}
 
-                  {attendanceQuery.data.pointages_du_jour.length === 0 ? (
+                  {attendanceData.pointages_du_jour.length === 0 ? (
                     <p className="text-sm text-muted-foreground">{t('noPunchOnDate')}</p>
                   ) : (
                     <div className="space-y-2">
                       <h3 className="text-sm font-semibold">{t('punchDetailsForDate')}</h3>
                       <ul className="divide-y rounded-lg border">
-                        {attendanceQuery.data.pointages_du_jour.map((punch) => (
+                        {attendanceData.pointages_du_jour.map((punch) => (
                           <li key={punch.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm">
                             <span className="font-medium">{t(`punchTypes.${punch.type_evenement}`)}</span>
                             <span className="tabular-nums">{formatTime(punch.date_pointage)}</span>
@@ -447,14 +506,14 @@ export default function MonDossierPage() {
                   <CardDescription>{t('recentHistoryDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {attendanceQuery.data.pointages.length === 0 ? (
+                  {attendanceData.pointages.length === 0 ? (
                     <p className="text-sm text-muted-foreground">{t('noHistory')}</p>
                   ) : (
                     <ul className="divide-y rounded-lg border">
-                      {attendanceQuery.data.pointages.slice(0, 10).map((punch) => (
+                      {attendanceData.pointages.slice(0, 10).map((punch) => (
                         <li key={punch.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm">
                           <span className="font-medium">{t(`punchTypes.${punch.type_evenement}`)}</span>
-                          <span>{formatDate(punch.date_pointage, locale, t('notAvailable'))}</span>
+                          <span>{formatAttendanceDate(punch.date_pointage, locale, attendanceData.timezone, t('notAvailable'))}</span>
                           <span className="text-muted-foreground">{punch.capteur ?? t('manualPunch')}</span>
                           <Badge variant="outline">{t(`calculationStatuses.${punch.statut_calcul}`)}</Badge>
                         </li>
@@ -470,21 +529,22 @@ export default function MonDossierPage() {
                     <ShieldCheck aria-hidden="true" className="size-5" />
                     {t('rejectedHistoryTitle')}
                   </CardTitle>
-                  <CardDescription>{t('rejectedHistoryDescription')}</CardDescription>
+                  <CardDescription>{t('rejectedHistoryDescription', { timezone: attendanceData.timezone })}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {attendanceQuery.data.pointages_rejetes.length === 0 ? (
+                  {attendanceData.pointages_rejetes.length === 0 ? (
                     <p className="text-sm text-muted-foreground">{t('noRejectedHistory')}</p>
                   ) : (
                     <>
                       <ul className="divide-y rounded-lg border">
-                        {attendanceQuery.data.pointages_rejetes.map((punch) => (
+                        {attendanceData.pointages_rejetes.map((punch) => (
                           <li key={punch.id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 text-sm">
                             <span className="font-medium">{t(`punchTypes.${punch.type_evenement}`)}</span>
-                            <span className="font-mono tabular-nums">{punch.date_capteur}</span>
-                            <span className="text-muted-foreground">{punch.capteur ?? t('notAvailable')}</span>
+                            <span><span className="text-muted-foreground">{t('sensorTimestamp')}: </span>{formatAttendanceDate(punch.date_capteur, locale, attendanceData.timezone, t('notAvailable'))}</span>
+                            <span><span className="text-muted-foreground">{t('sensorSource')}: </span>{t(`sensorSources.${punch.source}`)}</span>
+                            <span><span className="text-muted-foreground">{t('rejectionReason')}: </span>{punch.motif === 'DATE_FUTURE' ? t('futureDateReason') : punch.motif}</span>
                             <span className="text-muted-foreground">
-                              {t('rejectedReceivedAt', { date: formatDate(punch.recu_le, locale, t('notAvailable')) })}
+                              {t('rejectedReceivedAt', { date: formatAttendanceDate(punch.recu_le, locale, attendanceData.timezone, t('notAvailable')) })}
                             </span>
                             <Badge variant="destructive">{t('rejectedNotCounted')}</Badge>
                           </li>
@@ -493,8 +553,8 @@ export default function MonDossierPage() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm text-muted-foreground">
                           {t('rejectedCount', {
-                            shown: attendanceQuery.data.pointages_rejetes.length,
-                            total: attendanceQuery.data.pointages_rejetes_pagination.total,
+                            shown: attendanceData.pointages_rejetes.length,
+                            total: attendanceData.pointages_rejetes_pagination.total,
                           })}
                         </p>
                         <div className="flex gap-2">
@@ -512,7 +572,7 @@ export default function MonDossierPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            disabled={rejetsOffset + attendanceQuery.data.pointages_rejetes.length >= attendanceQuery.data.pointages_rejetes_pagination.total}
+                            disabled={rejetsOffset + attendanceData.pointages_rejetes.length >= attendanceData.pointages_rejetes_pagination.total}
                             onClick={() => setRejetsOffset(rejetsOffset + rejetsLimit)}
                           >
                             {t('nextPage')}
@@ -525,61 +585,72 @@ export default function MonDossierPage() {
                 </CardContent>
               </Card>
 
-              <Card className={activeTab !== 'evaluation' ? 'hidden' : undefined}>
+              <Card id="personal-evaluation-print" className={activeTab !== 'evaluation' ? 'hidden' : undefined}>
                 <CardHeader>
                   <CardTitle>{t('selfEvaluationTitle')}</CardTitle>
-                  <CardDescription>                  {t('selfEvaluationDescription', { start: formatDate(periodeDebutEffective, locale, t('notAvailable')), end: formatDate(periodeFinEffective, locale, t('notAvailable')) })}</CardDescription>
+                  <CardDescription>{t('selfEvaluationDescription', { start: formatAttendanceDate(periodeDebutEffective, locale, attendanceData.timezone, t('notAvailable')), end: formatAttendanceDate(periodeFinEffective, locale, attendanceData.timezone, t('notAvailable')) })}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="flex flex-wrap items-end gap-3">
+                  <div data-print-hide className="flex flex-wrap items-end gap-3">
                     <label className="grid gap-1 text-xs text-muted-foreground">{t('periodStart')}<Input type="date" max={periodeFinEffective} value={periodeDebutEffective} onChange={(event) => setPeriodeDebut(event.target.value)} /></label>
                     <label className="grid gap-1 text-xs text-muted-foreground">{t('periodEnd')}<Input type="date" min={periodeDebutEffective} max={dateAujourdhui} value={periodeFinEffective} onChange={(event) => setPeriodeFin(event.target.value)} /></label>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
+                      disabled={!attendanceData.evaluation}
                       onClick={() => {
-                        const rows = attendanceQuery.data?.evaluation?.jours ?? [];
-                        const csv = ['Date,Statut,Présences minutes,Retards minutes', ...rows.map((day) => `${day.date},${day.statut},${day.heures_travaillees_minutes},${day.retard_minutes}`)].join('\n');
-                        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+                        const rows = attendanceData.evaluation?.jours ?? [];
+                        const csv = [
+                          [t('csv.date'), t('csv.status'), t('csv.workedMinutes'), t('csv.lateMinutes')].map(csvCell).join(','),
+                          ...rows.map((day) => [
+                            formatAttendanceDate(day.date, locale, attendanceData.timezone, t('notAvailable')),
+                            t(`attendanceStatuses.${day.statut}`),
+                            day.heures_travaillees_minutes,
+                            day.retard_minutes,
+                          ].map(csvCell).join(',')),
+                        ].join('\r\n');
+                        const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
                         const link = document.createElement('a');
                         link.href = url;
                         link.download = `mon-dossier-${periodeDebutEffective}-${periodeFinEffective}.csv`;
+                        document.body.append(link);
                         link.click();
-                        URL.revokeObjectURL(url);
+                        link.remove();
+                        window.setTimeout(() => URL.revokeObjectURL(url), 0);
                       }}
-                    >Exporter CSV</Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>Exporter PDF / Imprimer</Button>
+                    >{t('exportCsv')}</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>{t('printEvaluation')}</Button>
                   </div>
-                  {attendanceQuery.data.evaluation && (
+                  {attendanceData.evaluation && (
                     <>
                       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Présences</p><p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.evaluation.totaux.jours_presence ?? 0}</p></div>
-                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodLate')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceQuery.data.evaluation.totaux.retard_total_minutes, t('hours'), t('minutes'))}</p></div>
-                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodAbsences')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.evaluation.totaux.jours_absence}</p></div>
-                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodWorked')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceQuery.data.evaluation.totaux.heures_travaillees_minutes, t('hours'), t('minutes'))}</p></div>
-                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodAnomalies')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceQuery.data.evaluation.totaux.pointages_anormaux}</p></div>
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('attendanceStatuses.NORMAL')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceData.evaluation.totaux.jours_presence ?? 0}</p></div>
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodLate')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceData.evaluation.totaux.retard_total_minutes, t('hours'), t('minutes'))}</p></div>
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodAbsences')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceData.evaluation.totaux.jours_absence}</p></div>
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodWorked')}</p><p className="mt-2 font-semibold tabular-nums">{duree(attendanceData.evaluation.totaux.heures_travaillees_minutes, t('hours'), t('minutes'))}</p></div>
+                        <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">{t('periodAnomalies')}</p><p className="mt-2 font-semibold tabular-nums">{attendanceData.evaluation.totaux.pointages_anormaux}</p></div>
                       </div>
                       <div className="h-72 w-full" role="img" aria-label={t('lateTrend')}>
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={attendanceQuery.data.evaluation.jours} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                          <AreaChart data={attendanceData.evaluation.jours} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
                             <CartesianGrid vertical={false} strokeDasharray="3 3" />
                             <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5)} tickLine={false} axisLine={false} />
                             <YAxis allowDecimals={false} unit={` ${t('minutes')}`} tickLine={false} axisLine={false} />
-                            <Tooltip labelFormatter={(value) => formatDate(String(value), locale, t('notAvailable'))} />
+                            <Tooltip labelFormatter={(value) => formatAttendanceDate(String(value), locale, attendanceData.timezone, t('notAvailable'))} />
                             <Area type="monotone" dataKey="retard_minutes" name={t('lateMinutes')} stroke="#0f766e" fill="#0f766e" fillOpacity={0.2} />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
                       <div className="space-y-2">
                         <h3 className="font-semibold">{t('anomalyDetails')}</h3>
-                        {attendanceQuery.data.evaluation.anomalies.length === 0 ? (
+                        {attendanceData.evaluation.anomalies.length === 0 ? (
                           <p className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">{t('noAnomalies')}</p>
                         ) : (
                           <ul className="divide-y rounded-lg border">
-                            {attendanceQuery.data.evaluation.anomalies.slice(0, 30).map((anomaly, index) => (
+                            {attendanceData.evaluation.anomalies.slice(0, 30).map((anomaly, index) => (
                               <li key={`${anomaly.date}-${anomaly.type}-${index}`} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-sm">
-                                <span>{formatDate(anomaly.date, locale, t('notAvailable'))}</span>
+                                <span>{formatAttendanceDate(anomaly.date, locale, attendanceData.timezone, t('notAvailable'))}</span>
                                 <span className="font-medium">{t(`punchTypes.${anomaly.type}`)}</span>
                                 <span>{anomaly.reel ?? t('missingPunch')}</span>
                                 <Badge variant={anomaly.statut === 'RETARD' ? 'secondary' : 'destructive'}>{t(`stepStatuses.${anomaly.statut}`)}</Badge>
@@ -612,7 +683,7 @@ export default function MonDossierPage() {
 
       {(!profile.is_active || (employee && !employee.actif)) && (
         <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          Ce compte ou le dossier employé associé est actuellement inactif. Certaines fonctions sont désactivées.
+          {t('inactiveAccountWarning')}
         </div>
       )}
 
@@ -693,6 +764,14 @@ export default function MonDossierPage() {
           <p className="text-sm text-muted-foreground">{t('dataScopeDescription')}</p>
         </CardContent>
       </Card>
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #personal-evaluation-print, #personal-evaluation-print * { visibility: visible !important; }
+          #personal-evaluation-print { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; }
+          #personal-evaluation-print [data-print-hide] { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

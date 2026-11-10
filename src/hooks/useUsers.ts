@@ -130,6 +130,7 @@ export interface RejectedPersonalPunch {
   date_capteur: string;
   recu_le: string;
   motif: string;
+  source: 'ZKTECO' | 'ADMS';
   type_evenement: string;
   capteur: string | null;
 }
@@ -290,6 +291,8 @@ export function usePersonalAttendance(
   periodeDebut = '',
   periodeFin = '',
   rejetsOffset = 0,
+  refreshEnabled = true,
+  evaluationEnabled = true,
 ) {
   const queryHistory = useQuery({
     queryKey: ['profile', 'attendance', dateJour, matricule, rejetsOffset, 'history'],
@@ -304,7 +307,7 @@ export function usePersonalAttendance(
       return response.data.data;
     },
     enabled,
-    refetchInterval: 30_000,
+    refetchInterval: refreshEnabled ? 30_000 : false,
   });
   const queryEvaluation = useQuery({
     queryKey: ['profile', 'attendance', dateJour, matricule, 'evaluation', periodeDebut, periodeFin],
@@ -319,7 +322,7 @@ export function usePersonalAttendance(
       );
       return response.data.data.evaluation;
     },
-    enabled: enabled && Boolean(periodeDebut && periodeFin),
+    enabled: enabled && evaluationEnabled && Boolean(periodeDebut && periodeFin),
     refetchInterval: false,
   });
 
@@ -327,12 +330,13 @@ export function usePersonalAttendance(
     data: queryHistory.data
       ? { ...queryHistory.data, ...(queryEvaluation.data ? { evaluation: queryEvaluation.data } : {}) }
       : undefined,
-    error: queryHistory.error ?? queryEvaluation.error,
-    isLoading: queryHistory.isLoading || queryEvaluation.isLoading,
-    isError: queryHistory.isError || queryEvaluation.isError,
-    isFetching: queryHistory.isFetching || queryEvaluation.isFetching,
+    error: queryHistory.error ?? (evaluationEnabled ? queryEvaluation.error : null),
+    isLoading: queryHistory.isLoading || (evaluationEnabled && queryEvaluation.isLoading),
+    isError: queryHistory.isError || (evaluationEnabled && queryEvaluation.isError),
+    isFetching: queryHistory.isFetching || (evaluationEnabled && queryEvaluation.isFetching),
     refetch: async () => {
-      await Promise.all([queryHistory.refetch(), queryEvaluation.refetch()]);
+      await queryHistory.refetch();
+      if (evaluationEnabled) await queryEvaluation.refetch();
     },
   };
 }
